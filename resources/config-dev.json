@@ -1,0 +1,9 @@
+{
+    "server": {
+        "tcpPort": 8080
+    },
+
+    "client": {
+        "tokenFile": "token.txt"
+    }
+}
