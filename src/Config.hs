@@ -32,17 +32,14 @@ data ServerConfig = ServerConfig
     { tcpPort :: Int
     } deriving (Generic, Show)
 instance FromJSON ServerConfig
-instance ToJSON ServerConfig
 
 data ClientConfig = ClientConfig
     { tokenFile :: Text
     } deriving (Generic, Show)
 instance FromJSON ClientConfig
-instance ToJSON ClientConfig
 
 data Config = Config
     { server :: ServerConfig
     , client :: ClientConfig
     } deriving (Generic, Show)
 instance FromJSON Config
-instance ToJSON Config

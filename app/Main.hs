@@ -24,10 +24,17 @@ module Main where
 import Prelude ()
 import VtUtils.Prelude
 
--- import Config
--- import Server
+import Config
+import Server
 
 main :: IO ()
 main = do
-    putStrLn "hello!"
-    return ()
+    args <- (fmap pack) <$> fromList <$> getArgs
+    if 1 /= length args then do
+        putStrLn $ "Error: Invalid arguments specified, args: [" <> textShow args <> "]"
+        putStrLn $ "Usage: [aojdk-check-exe <path/to/config.json>]"
+    else do
+        let cfpath = args ! 0
+        cf <- jsonDecodeFile cfpath :: IO Config
+        putStrLn $ "Starting server ..."
+        runServer cf

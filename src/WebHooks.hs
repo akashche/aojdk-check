@@ -29,5 +29,6 @@ import VtUtils.Prelude
 import Config
 
 receiveWebHook :: Config -> Value -> IO ()
-receiveWebHook _ _ = do
+receiveWebHook _ val = do
+    putStrLn $ jsonEncodeText val
     return ()
