@@ -23,13 +23,15 @@ import Prelude ()
 import VtUtils.Prelude
 import VtUtils.HUnit
 
-import ClientTest
+-- import ClientTest
 -- import GitTest
+import PatchTest
 import ServerTest
 
 main :: IO ()
 main = hunitMain (fromList
-    [ clientTest
+    [ serverTest
+--     , clientTest
 --     , gitTest
-    , serverTest
+    , patchTest
     ])

@@ -43,6 +43,7 @@ dependencies:
 - http-client
 - http-client-openssl
 - http-types
+- parsec
 - process
 - text
 - unordered-containers

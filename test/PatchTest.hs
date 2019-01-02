@@ -19,23 +19,32 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE Strict #-}
 
-module ClientTest (clientTest) where
+module PatchTest (patchTest) where
 
 import Test.HUnit
 import Prelude ()
 import VtUtils.Prelude
+import qualified Data.Vector as Vector
 
-import Client
+import Patch
 
-test1 :: Test
-test1 = TestLabel "test1" $ TestCase $ do
-    man <- clientCreateManager
---     tx <- clientFetchWebrevPatch man "http://cr.openjdk.java.net/~akasko/jdk8u/8035653/webrev.00/jdk.patch"
-    tx <- clientFetchWebrevPatch man "https://github.com/akashche/aojdk-check/commit/e14c27642514fc2fe08f528a8a1b6678c3ab95bf.patch"
-    putStrLn $ tx
+testParse :: Test
+testParse = TestLabel "testParse" $ TestCase $ do
+    paths <- patchParse "test/data/jdk.patch"
+    assertEqual "modified len" 1 $
+        Vector.length (modified paths)
+    assertEqual "modified" "new/src/windows/native/java/net/DualStackPlainDatagramSocketImpl.c" $
+        (modified paths) ! 0
+    assertEqual "added len" 1 $
+        Vector.length (added paths)
+    assertEqual "added" "new/test/java/net/DatagramSocket/B8035653.java" $
+        (added paths) ! 0
+    assertEqual "deleted len" 0 $
+        Vector.length (deleted paths)
     return ()
 
-clientTest :: Test
-clientTest = TestLabel "ClientTest" (TestList
-    [ test1
+patchTest :: Test
+patchTest = TestLabel "PatchTest" (TestList
+    [ testParse
     ])
+
