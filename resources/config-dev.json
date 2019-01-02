@@ -4,6 +4,6 @@
     },
 
     "client": {
-        "tokenFile": ".secret/token.txt"
+        "tokenFilePath": ".secret/token.txt"
     }
 }

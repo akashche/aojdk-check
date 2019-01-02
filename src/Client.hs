@@ -20,10 +20,10 @@
 {-# LANGUAGE Strict #-}
 
 module Client
-    ( fetchWebrevPatch
-    , createPullRequest
-    , createCheck
-    , updateCheck
+    ( clientFetchWebrevPatch
+    , clientCreatePullRequest
+    , clientCreateCheck
+    , clientUpdateCheck
     ) where
 
 import Prelude ()
@@ -31,14 +31,14 @@ import VtUtils.Prelude
 
 import Config
 
-fetchWebrevPatch :: Config -> Text -> IO Text
-fetchWebrevPatch _ _ = return "TODO"
+clientFetchWebrevPatch :: Config -> Text -> IO Text
+clientFetchWebrevPatch _ _ = return "TODO"
 
-createPullRequest :: Config -> IO Text
-createPullRequest _ = return "TODO"
+clientCreatePullRequest :: Config -> IO Text
+clientCreatePullRequest _ = return "TODO"
 
-createCheck :: Config -> IO Text
-createCheck _ = return "TODO"
+clientCreateCheck :: Config -> IO Text
+clientCreateCheck _ = return "TODO"
 
-updateCheck :: Config -> IO Text
-updateCheck _ = return "TODO"
+clientUpdateCheck :: Config -> IO Text
+clientUpdateCheck _ = return "TODO"

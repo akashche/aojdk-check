@@ -34,7 +34,7 @@ data ServerConfig = ServerConfig
 instance FromJSON ServerConfig
 
 data ClientConfig = ClientConfig
-    { tokenFile :: Text
+    { tokenFilePath :: Text
     } deriving (Generic, Show)
 instance FromJSON ClientConfig
 

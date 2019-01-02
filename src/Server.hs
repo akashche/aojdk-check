@@ -21,7 +21,7 @@
 
 module Server
     ( RespMsg(..)
-    , runServer
+    , serverRun
     ) where
 
 import Prelude ()
@@ -33,7 +33,7 @@ import qualified Network.HTTP.Types as HTTPTypes
 import qualified Network.Wai.Handler.Warp as Warp
 
 import Config
-import WebHooks
+import WebHook
 
 data RespMsg = RespMsg
     { message :: Text
@@ -64,7 +64,7 @@ webhooksHandler :: Config -> Application
 webhooksHandler cf req respond = do
      if "POST" == requestMethod req then do
         val <- httpRequestBodyJSON req :: IO Value
-        _ <- forkIO $ receiveWebHook cf val
+        _ <- forkIO $ webHookReceive cf val
         respond $ responseLBS HTTPTypes.status200 [] ""
      else do
         let err = RespMsg "Not Found" 404 (httpRequestPath req)
@@ -88,8 +88,8 @@ application cf req respond = do
                 Right rr -> return rr
         Nothing -> a404Handler req respond
 
-runServer :: Config -> IO ()
-runServer cf = do
+serverRun :: Config -> IO ()
+serverRun cf = do
     let scf = server cf
     let settings = Warp.setPort (tcpPort scf) Warp.defaultSettings
     Warp.runSettings settings (application cf)

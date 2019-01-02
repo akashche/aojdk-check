@@ -19,15 +19,12 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE Strict #-}
 
+module Hg
+    ( hgImportPatch
+    ) where
+
 import Prelude ()
 import VtUtils.Prelude
-import VtUtils.HUnit
 
-import ServerTest
-import GitTest
-
-main :: IO ()
-main = hunitMain (fromList
-    [ serverTest
-    , gitTest
-    ])
+hgImportPatch :: Text -> IO ()
+hgImportPatch _ = return ()

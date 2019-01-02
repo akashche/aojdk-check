@@ -40,6 +40,7 @@ dependencies:
 - bytestring
 - case-insensitive
 - http-types
+- process
 - text
 - unordered-containers
 - vector
@@ -49,6 +50,9 @@ dependencies:
 
 library:
   source-dirs: src
+
+extra-libraries:
+- git2
 
 executables:
   aojdk-check-exe:

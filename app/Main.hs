@@ -37,4 +37,4 @@ main = do
         let cfpath = args ! 0
         cf <- jsonDecodeFile cfpath :: IO Config
         putStrLn $ "Starting server ..."
-        runServer cf
+        serverRun cf
