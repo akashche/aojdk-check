@@ -47,4 +47,3 @@ patchTest :: Test
 patchTest = TestLabel "PatchTest" (TestList
     [ testParse
     ])
-

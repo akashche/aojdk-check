@@ -39,6 +39,7 @@ dependencies:
 - aeson-pretty
 - bytestring
 - case-insensitive
+- directory
 - HsOpenSSL
 - http-client
 - http-client-openssl

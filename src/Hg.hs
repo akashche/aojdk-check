@@ -25,6 +25,21 @@ module Hg
 
 import Prelude ()
 import VtUtils.Prelude
+import qualified Data.Text as Text
+import qualified System.Directory as Directory
 
-hgImportPatch :: Text -> IO ()
-hgImportPatch _ = return ()
+-- https://stackoverflow.com/q/17247538/314015
+
+hgImportPatch :: Text -> Text -> Text -> Text -> IO ()
+hgImportPatch exec repo patch out = do
+    let args = fromList ["--repository", repo, "import", "--no-commit", patch]
+    code <- processSpawnAndWait exec args out
+    when (0 /= code) $ do
+        exist <- Directory.doesFileExist (unpack out)
+        output <- if exist then
+            readFile (unpack out)
+        else
+            return ""
+        (error . unpack) $ "Mercurial error,"
+            <> " code: [" <> (textShow code) <>"],"
+            <> " output: [" <> (Text.take 1024 (Text.strip output)) <> "]"

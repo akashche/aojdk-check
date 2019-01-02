@@ -33,7 +33,7 @@ test1 :: Test
 test1 = TestLabel "test1" $ TestCase $ do
     let user = "akashche"
     token <- Text.strip <$> readFile ".secret/token.txt"
-    let url = "https://" <> user <> ":" <> token <> "@github.com/akashche/push-test.git_FAIL"
+    let url = "https://" <> user <> ":" <> token <> "@github.com/akashche/push-test.git"
 
     Process.callProcess "/bin/rm" ["-rf", "work"]
     Process.callProcess "/bin/mkdir" ["work"]
@@ -59,7 +59,9 @@ test1 = TestLabel "test1" $ TestCase $ do
                 , "bar.txt"
                 ]
         gitCommitBranch repo branch paths "test" "test@test.org" "test msg"
-        gitPushBranch repo branch url
+--         gitPushBranch repo branch url
+        let _ = url
+        return ()
 
     Process.callProcess "/usr/bin/git" ["--git-dir", "work/repo/.git", "--work-tree", "work/repo", "status"]
     return ()

@@ -23,13 +23,14 @@ module Main where
 
 import Prelude ()
 import VtUtils.Prelude
+import qualified System.Environment as Environment
 
 import Config
 import Server
 
 main :: IO ()
 main = do
-    args <- (fmap pack) <$> fromList <$> getArgs
+    args <- (fmap pack) <$> fromList <$> Environment.getArgs
     if 1 /= length args then do
         putStrLn $ "Error: Invalid arguments specified, args: [" <> textShow args <> "]"
         putStrLn $ "Usage: [aojdk-check-exe <path/to/config.json>]"
