@@ -19,17 +19,24 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE Strict #-}
 
+module ClientTest (clientTest) where
+
+import Test.HUnit
 import Prelude ()
 import VtUtils.Prelude
-import VtUtils.HUnit
 
-import ClientTest
--- import GitTest
-import ServerTest
+import Client
 
-main :: IO ()
-main = hunitMain (fromList
-    [ clientTest
---     , gitTest
-    , serverTest
+test1 :: Test
+test1 = TestLabel "test1" $ TestCase $ do
+    man <- clientCreateManager
+--     tx <- clientFetchWebrevPatch man "http://cr.openjdk.java.net/~akasko/jdk8u/8035653/webrev.00/jdk.patch"
+    tx <- clientFetchWebrevPatch man "https://github.com/akashche/aojdk-check/commit/e14c27642514fc2fe08f528a8a1b6678c3ab95bf.patch"
+    putStrLn $ tx
+    return ()
+
+clientTest :: Test
+clientTest = TestLabel "ClientTest" (TestList
+    [ test1
     ])
+

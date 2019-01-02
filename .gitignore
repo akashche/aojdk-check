@@ -1,5 +1,6 @@
 /.stack-work
 /.idea
 /.secret
+/work
 *.cabal
 *~

@@ -20,7 +20,9 @@
 {-# LANGUAGE Strict #-}
 
 module Client
-    ( clientFetchWebrevPatch
+    ( clientCreateManager
+    , clientFetchWebrevPatch
+    , clientAddIssueComment
     , clientCreatePullRequest
     , clientCreateCheck
     , clientUpdateCheck
@@ -28,11 +30,30 @@ module Client
 
 import Prelude ()
 import VtUtils.Prelude
+-- import qualified Network.HTTP.Client as Client
+import qualified Network.HTTP.Client.OpenSSL as OpenSSL
+import qualified OpenSSL.Session as OpenSSLSession
 
 import Config
 
-clientFetchWebrevPatch :: Config -> Text -> IO Text
-clientFetchWebrevPatch _ _ = return "TODO"
+-- todo: move to config
+maxResponseSizeBytes :: Int
+maxResponseSizeBytes = 8192
+
+-- todo: timeouts
+clientCreateManager :: IO Manager
+clientCreateManager =
+    OpenSSL.withOpenSSL $
+        newManager (OpenSSL.opensslManagerSettings OpenSSLSession.context)
+
+clientFetchWebrevPatch :: Manager -> Text -> IO Text
+clientFetchWebrevPatch man url = do
+    req <- parseRequest (unpack url)
+    withResponse req man $ \resp ->
+        httpResponseBodyText url (responseBody resp) maxResponseSizeBytes
+
+clientAddIssueComment :: Config -> Text -> IO Text
+clientAddIssueComment _ _ = return "TODO"
 
 clientCreatePullRequest :: Config -> IO Text
 clientCreatePullRequest _ = return "TODO"

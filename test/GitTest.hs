@@ -33,7 +33,7 @@ test1 :: Test
 test1 = TestLabel "test1" $ TestCase $ do
     let user = "akashche"
     token <- Text.strip <$> readFile ".secret/token.txt"
-    let url = "https://" <> user <> ":" <> token <> "@github.com/akashche/push-test.git"
+    let url = "https://" <> user <> ":" <> token <> "@github.com/akashche/push-test.git_FAIL"
 
     Process.callProcess "/bin/rm" ["-rf", "work"]
     Process.callProcess "/bin/mkdir" ["work"]
