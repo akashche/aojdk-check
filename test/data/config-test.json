@@ -1,0 +1,14 @@
+{
+  "server": {
+      "tcpPort": 8088
+  },
+
+  "client": {
+      "maxResponseSizeBytes": 8192,
+
+      "github": {
+        "user": "akashche",
+        "tokenFilePath": ".secret/token.txt"
+      }
+  }
+}

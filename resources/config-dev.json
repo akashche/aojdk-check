@@ -4,6 +4,11 @@
     },
 
     "client": {
-        "tokenFilePath": ".secret/token.txt"
+        "maxResponseSizeBytes": 8192,
+
+        "github": {
+            "user": "akashche",
+            "tokenFilePath": ".secret/token.txt"
+        }
     }
 }

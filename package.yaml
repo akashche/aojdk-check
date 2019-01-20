@@ -37,6 +37,7 @@ dependencies:
 - base >= 4.7 && < 5
 - aeson
 - aeson-pretty
+- base64-bytestring
 - bytestring
 - case-insensitive
 - directory

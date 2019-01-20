@@ -34,31 +34,28 @@ import VtUtils.Prelude
 import qualified Network.HTTP.Client.OpenSSL as OpenSSL
 import qualified OpenSSL.Session as OpenSSLSession
 
-import Config
-
--- todo: move to config
-maxResponseSizeBytes :: Int
-maxResponseSizeBytes = 8192
+import App
 
 -- todo: timeouts
-clientCreateManager :: IO Manager
-clientCreateManager =
+clientCreateManager ::Config -> IO Manager
+clientCreateManager _ =
     OpenSSL.withOpenSSL $
         newManager (OpenSSL.opensslManagerSettings OpenSSLSession.context)
 
-clientFetchWebrevPatch :: Manager -> Text -> IO Text
-clientFetchWebrevPatch man url = do
-    req <- parseRequest (unpack url)
-    withResponse req man $ \resp ->
-        httpResponseBodyText url (responseBody resp) maxResponseSizeBytes
+clientFetchWebrevPatch :: App -> Text -> IO Text
+clientFetchWebrevPatch app url = do
+    let mb = get ((maxResponseSizeBytes . client . config) app :: MaxResponseSizeBytes)
+    let req = (parseRequest_ . unpack) url
+    withResponse req (manager app) $ \resp ->
+        httpResponseBodyText url resp mb
 
-clientAddIssueComment :: Config -> Text -> IO Text
+clientAddIssueComment :: App -> Text -> IO Text
 clientAddIssueComment _ _ = return "TODO"
 
-clientCreatePullRequest :: Config -> IO Text
+clientCreatePullRequest :: App -> IO Text
 clientCreatePullRequest _ = return "TODO"
 
-clientCreateCheck :: Config -> IO Text
+clientCreateCheck :: App -> IO Text
 clientCreateCheck _ = return "TODO"
 
 clientUpdateCheck :: Config -> IO Text

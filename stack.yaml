@@ -19,10 +19,10 @@ packages:
 - .
 
 extra-deps:
-#- vt-utils-1.0.1.0
-- github: akashche/vt-utils
-  commit: master
-# - /home/alex/projects/haskell/vt-utils/
+#- vt-utils-1.1.0.0
+#- github: akashche/vt-utils
+#  commit: master
+ - /home/alex/projects/haskell/vt-utils/
 
 ghc-options:
   "$locals": -O2 -Wall -Werror

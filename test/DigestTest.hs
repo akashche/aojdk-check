@@ -19,27 +19,23 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE Strict #-}
 
-module Config
-    ( Config(..)
-    , ServerConfig(..)
-    , ClientConfig(..)
-    ) where
+module DigestTest (digestTest) where
 
+import Test.HUnit
 import Prelude ()
 import VtUtils.Prelude
+import qualified Data.ByteString.Base64.URL as Base64URL
 
-data ServerConfig = ServerConfig
-    { tcpPort :: Int
-    } deriving (Generic, Show)
-instance FromJSON ServerConfig
+import Digest
 
-data ClientConfig = ClientConfig
-    { tokenFilePath :: Text
-    } deriving (Generic, Show)
-instance FromJSON ClientConfig
+testSign :: Test
+testSign = TestLabel "testSign" $ TestCase $ do
+    bs <- digestSignRS256 ".secret/aojdk-check-test.2019-01-20.private-key.pem" "foo2"
+    assertEqual "sign" "o0ZGF2sZJK_LU7l_tIPfE0IkheYJKi7uSdROEdfZQ-6f_jC1DYirksZsMLVdyaEgIfW-69kMUtWLIy5VkI1HGcjyagalIkXN2Ci30VF7w-UeG9QWt5bwNHEqOOupwj7gyFgEqhqLNcnToUAyN78XyyGXAeHONv2uAVaWgioPdPVt4gZstYOXa1mqod40LT8MQcORQTUg9oBy_2i-xJWRKmZvGzVPZ5bg8oNyMvlYpWu-y1ZSYb3oR42CXibPKMKrtenY-lrMDWJpi3swpgIyBsymm6KgAhMM5-A3nKcXKpecdIMyxi98huR3OpelNIcsPc3k48u3Hq7IovB9RffpaA==" $
+        (decodeUtf8 . Base64URL.encode) bs
+    return ()
 
-data Config = Config
-    { server :: ServerConfig
-    , client :: ClientConfig
-    } deriving (Generic, Show)
-instance FromJSON Config
+digestTest :: Test
+digestTest = TestLabel "DigestTest" (TestList
+    [ testSign
+    ])

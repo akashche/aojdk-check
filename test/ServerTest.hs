@@ -24,13 +24,67 @@ module ServerTest (serverTest) where
 import Test.HUnit
 import Prelude ()
 import VtUtils.Prelude
+import qualified Network.HTTP.Client as Client
+import qualified Network.HTTP.Types as HTTPTypes
+import qualified Network.Wai.Handler.Warp as Warp
 
-test1 :: Test
-test1 = TestLabel "test1" $ TestCase $ do
-    -- todo
+import App
+import Server
+
+test404 :: App -> Test
+test404 app = TestLabel "test404" $ TestCase $ do
+    Warp.withApplication (return server404Handler) $ \port ->  do
+        let url = "http://127.0.0.1:" <> (textShow port) <> "/"
+        let req = ((parseRequest_ . unpack) url)
+        withResponse req (manager app) $ \resp -> do
+            json <- httpResponseBodyJSON url resp 1024 :: IO Value
+            assertEqual "code" 404 $ (jsonGet json "code" :: Int)
+            assertEqual "message" "Not Found" $ (jsonGet json "message" :: Text)
+            let HTTPTypes.Status st _ = Client.responseStatus resp
+            assertEqual "status" 404 $ st
     return ()
 
-serverTest :: Test
-serverTest = TestLabel "ServerTest" (TestList
-    [ test1
+testPing :: App -> Test
+testPing app = TestLabel "testPing" $ TestCase $ do
+    Warp.withApplication (return $ serverPingHandler app) $ \port ->  do
+        let url = "http://127.0.0.1:" <> (textShow port) <> "/"
+        let req = ((parseRequest_ . unpack) url)
+        withResponse req (manager app) $ \resp -> do
+            json <- httpResponseBodyJSON url resp 1024 :: IO Value
+            assertEqual "code" 200 $ (jsonGet json "code" :: Int)
+            assertEqual "message" "pong" $ (jsonGet json "message" :: Text)
+            let HTTPTypes.Status st _ = Client.responseStatus resp
+            assertEqual "status" 200 $ st
+    return ()
+
+testWebHook :: App -> Test
+testWebHook app = TestLabel "testWebHook" $ TestCase $ do
+    Warp.withApplication (return $ serverWebHookHandler app) $ \port ->  do
+        let url = "http://127.0.0.1:" <> (textShow port) <> "/"
+        -- get
+        let reqGet = ((parseRequest_ . unpack) url)
+                { Client.method = "GET"
+                }
+        stGet <- withResponse reqGet (manager app) $ \resp -> do
+            let HTTPTypes.Status stGet _ = Client.responseStatus resp
+            return stGet
+        assertEqual "get" 404 $ stGet
+        -- post
+        wh <- readFile "test/data/webhook-issue-opened.json"
+        let reqPost = ((parseRequest_ . unpack) url)
+                { Client.method = "POST"
+                , Client.requestBody = (Client.RequestBodyBS . encodeUtf8) wh
+                }
+        stPost <- withResponse reqPost (manager app) $ \resp -> do
+            let HTTPTypes.Status stPost _ = Client.responseStatus resp
+            return stPost
+        assertEqual "post" 200 $ stPost
+
+    return ()
+
+serverTest :: App -> Test
+serverTest app = TestLabel "ServerTest" (TestList
+    [ test404 app
+    , testPing app
+    , testWebHook app
     ])

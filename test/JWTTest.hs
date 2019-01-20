@@ -19,34 +19,22 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE Strict #-}
 
+module JWTTest (jwtTest) where
+
+import Test.HUnit
 import Prelude ()
 import VtUtils.Prelude
-import VtUtils.HUnit
 
-import App
-import Client
+import JWT
 
-import ClientTest
-import DigestTest
-import GitTest
-import HgTest
-import JWTTest
-import PatchTest
-import ServerTest
+testCreate :: Test
+testCreate = TestLabel "testCreate" $ TestCase $ do
+    jwt <- jwtCreate ".secret/aojdk-check-test.2019-01-20.private-key.pem" "23953" 600
+    putStrLn $ textShow jwt
+    return ()
 
-main :: IO ()
-main = do
-    cf <- jsonDecodeFile "test/data/config-test.json"
-    man <- clientCreateManager cf
-    let tpath = get ((tokenFilePath . github . client) cf :: TokenFilePath)
-    token <- readFile (unpack tpath)
-    let app = App cf man (GitHubToken token)
-    hunitMain $ fromList
-        [ serverTest app
-        , clientTest app
-        , digestTest
-        , gitTest
-        , hgTest
-        , jwtTest
-        , patchTest
-        ]
+jwtTest :: Test
+jwtTest = TestLabel "JWTTest" (TestList
+    [ testCreate
+    ])
+

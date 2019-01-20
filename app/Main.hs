@@ -25,7 +25,8 @@ import Prelude ()
 import VtUtils.Prelude
 import qualified System.Environment as Environment
 
-import Config
+import App
+import Client
 import Server
 
 main :: IO ()
@@ -37,5 +38,8 @@ main = do
     else do
         let cfpath = args ! 0
         cf <- jsonDecodeFile cfpath :: IO Config
+        man <- clientCreateManager cf
+        let tpath = get ((tokenFilePath . github . client) cf :: TokenFilePath)
+        token <- readFile (unpack tpath)
         putStrLn $ "Starting server ..."
-        serverRun cf
+        serverRun (App cf man (GitHubToken token))

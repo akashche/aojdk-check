@@ -22,6 +22,11 @@
 module Server
     ( RespMsg(..)
     , serverRun
+    -- handlers
+    , server404Handler
+    , server500Handler
+    , serverPingHandler
+    , serverWebHookHandler
     ) where
 
 import Prelude ()
@@ -32,7 +37,7 @@ import qualified Data.HashMap.Strict as HashMap
 import qualified Network.HTTP.Types as HTTPTypes
 import qualified Network.Wai.Handler.Warp as Warp
 
-import Config
+import App
 import WebHook
 
 data RespMsg = RespMsg
@@ -42,55 +47,57 @@ data RespMsg = RespMsg
     } deriving (Generic, Show)
 instance ToJSON RespMsg
 
-a404Handler :: Application
-a404Handler req respond = do
+type Handler = Application
+
+server404Handler ::Handler
+server404Handler req respond = do
     let err = RespMsg "Not Found" 404 (httpRequestPath req)
     respond $ responseLBS HTTPTypes.status404 [httpContentTypeJSON] $
         AesonPretty.encodePretty err
 
-a500Handler :: SomeException -> Application
-a500Handler exc req respond = do
+server500Handler :: SomeException -> Handler
+server500Handler exc req respond = do
     let err = RespMsg (textShow exc) 500 (httpRequestPath req)
     respond $ responseLBS HTTPTypes.status500 [httpContentTypeJSON] $
         AesonPretty.encodePretty err
 
-pingHandler :: Config -> Application
-pingHandler _ req respond = do
+serverPingHandler :: App -> Handler
+serverPingHandler _ req respond = do
     let pong = RespMsg "pong" 200 (httpRequestPath req)
     respond $ responseLBS HTTPTypes.status200 [httpContentTypeJSON] $
         AesonPretty.encodePretty pong
 
-webhooksHandler :: Config -> Application
-webhooksHandler cf req respond = do
+serverWebHookHandler :: App -> Handler
+serverWebHookHandler app req respond = do
      if "POST" == requestMethod req then do
         val <- httpRequestBodyJSON req :: IO Value
-        _ <- forkIO $ webHookReceive cf val
+        _ <- forkIO $ webHookReceive app val
         respond $ responseLBS HTTPTypes.status200 [] ""
      else do
         let err = RespMsg "Not Found" 404 (httpRequestPath req)
         respond $ responseLBS HTTPTypes.status404 [httpContentTypeJSON] $
             AesonPretty.encodePretty err
 
-handlers :: HashMap Text (Config -> Application)
+handlers :: HashMap Text (App -> Handler)
 handlers = HashMap.fromList
-    [ ("/ping", pingHandler)
-    , ("/webhooks", webhooksHandler)
+    [ ("/ping", serverPingHandler)
+    , ("/webhooks", serverWebHookHandler)
     ]
 
-application :: Config -> Application
-application cf req respond = do
+master :: App -> Handler
+master app req respond = do
     let reqpath = (decodeUtf8 . rawPathInfo) req
     case lookup reqpath handlers of
         Just ha -> do
-            outcome <- try $ ha cf req respond
+            outcome <- try $ ha app req respond
             case outcome of
-                Left exc -> a500Handler exc req respond
+                Left exc -> server500Handler exc req respond
                 Right rr -> return rr
-        Nothing -> a404Handler req respond
+        Nothing -> server404Handler req respond
 
-serverRun :: Config -> IO ()
-serverRun cf = do
-    let scf = server cf
+serverRun :: App -> IO ()
+serverRun app = do
+    let scf = (server . config) app
     let settings = Warp.setPort (tcpPort scf) Warp.defaultSettings
-    Warp.runSettings settings (application cf)
+    Warp.runSettings settings (master app)
     return ()
