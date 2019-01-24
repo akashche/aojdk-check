@@ -39,7 +39,5 @@ main = do
         let cfpath = args ! 0
         cf <- jsonDecodeFile cfpath :: IO Config
         man <- clientCreateManager cf
-        let tpath = get ((tokenFilePath . github . client) cf :: TokenFilePath)
-        token <- readFile (unpack tpath)
         putStrLn $ "Starting server ..."
-        serverRun (App cf man (GitHubToken token))
+        serverRun (App cf man)

@@ -99,7 +99,7 @@ withPrivateKey label bio fun =
             key <- c'PEM_read_bio_PrivateKey bio nullPtr nullPtr nullPtr
             when (nullPtr == key) $ error . unpack $
                    "FFI call error,"
-                <> " call: [PEM_read_bio_PrivateKey]"
+                <> " call: [PEM_read_bio_PrivateKey],"
                 <> " path: [" <> label <> "]"
             return key )
         (\key -> c'EVP_PKEY_free key)
@@ -111,7 +111,7 @@ getDigestByName name = do
         md <- c'EVP_get_digestbyname cs
         when (nullPtr == md) $ error .unpack $
                "FFI call error,"
-            <> " call: [EVP_get_digestbyname]"
+            <> " call: [EVP_get_digestbyname],"
             <> " name: [" <> name <> "]"
         return md
 
@@ -128,13 +128,13 @@ initDigestCtx ctx hash key = do
             errRead <- c'BIO_ctrl bio 108 (0x01 .|. 0x02) nm
             when (1 /= errRead) $ error . unpack $
                    "FFI call error,"
-                <> " call: [BIO_read_filename]"
+                <> " call: [BIO_read_filename],"
                 <> " path: [" <> key <> "]"
             withPrivateKey key bio $ \pkey -> do
                 errInit2 <- c'EVP_DigestSignInit ctx nullPtr md nullPtr pkey
                 when (1 /= errInit2) $ error . unpack $
                        "FFI call error,"
-                    <> " call: [EVP_DigestSignInit]"
+                    <> " call: [EVP_DigestSignInit],"
                     <> " path: [" <> key <> "]"
 
 digestSignRS256 :: Text -> ByteString -> IO ByteString
@@ -147,7 +147,7 @@ digestSignRS256 key text =
             err <- c'EVP_DigestUpdate ctx dt (fromIntegral dlen)
             when (1 /= err) $ error . unpack $
                    "FFI call error,"
-                <> " call: [EVP_DigestUpdate]"
+                <> " call: [EVP_DigestUpdate],"
                 <> " data len: [" <> (textShow dlen) <> "]"
         -- finalize digest
         len <- ffiWithPtr (0 :: CSize) $ \req -> do
@@ -164,7 +164,7 @@ digestSignRS256 key text =
                 err <- c'EVP_DigestSignFinal ctx buf (castPtr lptr)
                 when (1 /= err) $ error . unpack $
                        "FFI call error,"
-                    <> " call: [EVP_DigestSignFinal]"
+                    <> " call: [EVP_DigestSignFinal],"
                     <> " len: [" <> (textShow len) <> "]"
                 bs <- packCStringLen ((castPtr buf), (fromIntegral len))
                 return bs

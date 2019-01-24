@@ -21,20 +21,40 @@
 
 module Client
     ( clientCreateManager
-    , clientFetchWebrevPatch
-    , clientAddIssueComment
-    , clientCreatePullRequest
-    , clientCreateCheck
-    , clientUpdateCheck
+    , clientGithubAuth
     ) where
 
 import Prelude ()
 import VtUtils.Prelude
--- import qualified Network.HTTP.Client as Client
+import qualified Data.ByteString as ByteString
+import qualified Data.ByteString.Base64.URL as Base64URL
+import qualified Data.ByteString.Lazy as ByteStringLazy
+import qualified Network.HTTP.Client as Client
 import qualified Network.HTTP.Client.OpenSSL as OpenSSL
+import qualified Network.HTTP.Types as HTTPTypes
 import qualified OpenSSL.Session as OpenSSLSession
 
 import App
+import Data
+import Digest
+
+createJWT :: GitHubKeyPath -> GitHubAppId -> JWTDurationSecs -> IO JSONWebToken
+createJWT key iss dur = do
+    now <- (floor . utcTimeToPOSIXSeconds) <$> getCurrentTime
+    let header = object
+            [ "alg" .= ("RS256" :: Text)
+            , "typ" .= ("JWT" :: Text)
+            ]
+    let body = object
+            [ "iat" .= now
+            , "exp" .= (now + (getInt dur))
+            , "iss" .= (getText iss)
+            ]
+    let bs = (base64Json header) <> "." <> (base64Json body)
+    sign <- Base64URL.encode <$> digestSignRS256 (getText key) bs
+    return $ JSONWebToken $ ByteString.concat [bs, ".", sign]
+    where
+        base64Json = Base64URL.encode . ByteStringLazy.toStrict . encodePretty
 
 -- todo: timeouts
 clientCreateManager ::Config -> IO Manager
@@ -42,21 +62,30 @@ clientCreateManager _ =
     OpenSSL.withOpenSSL $
         newManager (OpenSSL.opensslManagerSettings OpenSSLSession.context)
 
-clientFetchWebrevPatch :: App -> Text -> IO Text
-clientFetchWebrevPatch app url = do
-    let mb = get ((maxResponseSizeBytes . client . config) app :: MaxResponseSizeBytes)
-    let req = (parseRequest_ . unpack) url
-    withResponse req (manager app) $ \resp ->
-        httpResponseBodyText url resp mb
+-- todo: fix args
+-- clientFetchWebrevPatch :: App -> Text -> IO Text
+-- clientFetchWebrevPatch app url = do
+--     let mb = get ((maxResponseSizeBytes . client . config) app :: MaxResponseSizeBytes)
+--     let req = (parseRequest_ . unpack) url
+--     withResponse req (manager app) $ \resp ->
+--         httpResponseBodyText url resp mb
 
-clientAddIssueComment :: App -> Text -> IO Text
-clientAddIssueComment _ _ = return "TODO"
+clientGithubAuth :: App -> IO GitHubToken
+clientGithubAuth app = do
+    let ccf = client . config $ app
+    let gcf = github ccf
+    jwt <- createJWT (keyPath gcf) (appId gcf) (jwtDurationSecs gcf)
+    let url = "https://api.github.com/app/installations/" <> (getText . appInstallId $ gcf) <> "/access_tokens"
+    let req = ((parseRequest_ . unpack) url)
+            { Client.method = "POST"
+            , Client.requestHeaders =
+                [ ("User-Agent", (getBS . userAgent $ ccf))
+                , ("Authorization", "Bearer " <> (getBS jwt))
+                , ("Accept", "application/vnd.github.machine-man-preview+json")
+                ]
+            }
+    withResponse req (manager app) $ \resp -> do
+        let HTTPTypes.Status st _ = Client.responseStatus resp
+        when (201 /= st) $ error "Token error" -- todo: details
+        httpResponseBodyJSON url resp (getInt . maxResponseSizeBytes $ ccf)
 
-clientCreatePullRequest :: App -> IO Text
-clientCreatePullRequest _ = return "TODO"
-
-clientCreateCheck :: App -> IO Text
-clientCreateCheck _ = return "TODO"
-
-clientUpdateCheck :: Config -> IO Text
-clientUpdateCheck _ = return "TODO"

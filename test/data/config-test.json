@@ -4,7 +4,7 @@
   },
 
   "client": {
-      "maxResponseSizeBytes": 8192,
+      "maxResponseSizeBytes": 32768,
 
       "github": {
         "user": "akashche",

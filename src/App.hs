@@ -24,23 +24,21 @@ module App
     , Config(..)
     -- server
     , ServerConfig(..)
+    , ServerTcpPort(..)
     -- client
     , ClientConfig(..)
+    -- github
     , GitHubConfig(..)
-    , GitHubUser(..)
-    , TokenFilePath(..)
-    , MaxResponseSizeBytes(..)
-    -- other
-    , GitHubToken(..)
     ) where
 
 import Prelude ()
 import VtUtils.Prelude
 
+import Data
+
 data App = App
     { config :: Config
     , manager :: Manager
-    , githubToken :: GitHubToken
     }
 
 data Config = Config
@@ -52,49 +50,24 @@ instance FromJSON Config
 -- server config
 
 data ServerConfig = ServerConfig
-    { tcpPort :: Int
+    { tcpPort :: ServerTcpPort
     } deriving (Generic, Show)
 instance FromJSON ServerConfig
 
 -- client config
 
 data ClientConfig = ClientConfig
-    { github :: GitHubConfig
-    , maxResponseSizeBytes :: MaxResponseSizeBytes
+    { maxResponseSizeBytes :: MaxResponseSizeBytes
+    , userAgent :: UserAgent
+    , github :: GitHubConfig
     } deriving (Generic, Show)
 instance FromJSON ClientConfig
 
 data GitHubConfig = GitHubConfig
-    { user :: GitHubUser
-    , tokenFilePath :: TokenFilePath
+    { appId :: GitHubAppId
+    , appInstallId :: GitHubAppInstallId
+    , keyPath :: GitHubKeyPath
+    , jwtDurationSecs :: JWTDurationSecs
     } deriving (Generic, Show)
 instance FromJSON GitHubConfig
-
-newtype GitHubUser = GitHubUser
-    { get :: Text
-    } deriving (Generic, Show)
-instance FromJSON GitHubUser
-    where parseJSON = genericParseJSON jsonUnwrapUnaryOptions
-
-newtype MaxResponseSizeBytes = MaxResponseSizeBytes
-    { get :: Int
-    } deriving (Generic, Show)
-instance FromJSON MaxResponseSizeBytes
-    where parseJSON = genericParseJSON jsonUnwrapUnaryOptions
-
-newtype TokenFilePath = TokenFilePath
-    { get :: Text
-    } deriving (Generic, Show)
-instance FromJSON TokenFilePath
-    where parseJSON = genericParseJSON jsonUnwrapUnaryOptions
-
-
--- token
-
-newtype GitHubToken = GitHubToken
-    { get ::Text
-    } deriving Show
-
-
-
 

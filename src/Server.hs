@@ -97,7 +97,7 @@ master app req respond = do
 
 serverRun :: App -> IO ()
 serverRun app = do
-    let scf = (server . config) app
-    let settings = Warp.setPort (tcpPort scf) Warp.defaultSettings
+    let ServerTcpPort port = tcpPort . server . config $ app
+    let settings = Warp.setPort port Warp.defaultSettings
     Warp.runSettings settings (master app)
     return ()

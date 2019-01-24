@@ -4,11 +4,14 @@
     },
 
     "client": {
-        "maxResponseSizeBytes": 8192,
+        "maxResponseSizeBytes": 32768,
+        "userAgent": "Mozilla/5.0 (compatible; aojdkcheckbot/1.0; +https://github.com/akashche/aojdk-check)",
 
         "github": {
-            "user": "akashche",
-            "tokenFilePath": ".secret/token.txt"
+            "appId": "23953",
+            "appInstallId": "602759",
+            "keyPath": ".secret/aojdk-check-test.2019-01-20.private-key.pem",
+            "jwtDurationSecs": 600
         }
     }
 }

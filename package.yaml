@@ -48,6 +48,7 @@ dependencies:
 - parsec
 - process
 - text
+- time
 - unordered-containers
 - vector
 - vt-utils

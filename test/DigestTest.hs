@@ -30,8 +30,8 @@ import Digest
 
 testSign :: Test
 testSign = TestLabel "testSign" $ TestCase $ do
-    bs <- digestSignRS256 ".secret/aojdk-check-test.2019-01-20.private-key.pem" "foo2"
-    assertEqual "sign" "o0ZGF2sZJK_LU7l_tIPfE0IkheYJKi7uSdROEdfZQ-6f_jC1DYirksZsMLVdyaEgIfW-69kMUtWLIy5VkI1HGcjyagalIkXN2Ci30VF7w-UeG9QWt5bwNHEqOOupwj7gyFgEqhqLNcnToUAyN78XyyGXAeHONv2uAVaWgioPdPVt4gZstYOXa1mqod40LT8MQcORQTUg9oBy_2i-xJWRKmZvGzVPZ5bg8oNyMvlYpWu-y1ZSYb3oR42CXibPKMKrtenY-lrMDWJpi3swpgIyBsymm6KgAhMM5-A3nKcXKpecdIMyxi98huR3OpelNIcsPc3k48u3Hq7IovB9RffpaA==" $
+    bs <- digestSignRS256 "test/data/test.private-key.pem" "foo2"
+    assertEqual "sign" "AijZaMANraPlr5cetcl8pzpoK6wuWJ2pgOdThrEtl9T5AdlXsJRMx2XMIKDLhOftq4pndc4N6VQTonX6J6zEg8XnvIZkuQB_mUo7zCS9C_fOSzpK5Ay5IFCltbsg72GTQvr7Eg3lZRSMqaOfKNzkVBl2WvcUQwiVsWbrQ6uX9cAOXvioh5URu35ER4jYtX8oqtxutvE4U9_rbWTvC1PkHQAySqkRX3HUtqiS9nxIqtGUHTm7tDZ48OcHg-io01D1e9bP9oFCO5zeEaJgCoHcFkOVDx9cLHCnZL2cDf-uiWADxGcrl5Dz4hPjqtJmg79NUf6ngv2RfDDDwhsiqP4WRg==" $
         (decodeUtf8 . Base64URL.encode) bs
     return ()
 
