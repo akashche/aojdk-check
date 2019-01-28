@@ -31,7 +31,10 @@ module Data
     , GitHubKeyPath(..)
     , JWTDurationSecs(..)
     , GitHubToken(..)
+    , GitHubTokenBody(..)
+    , GitHubTokenExpiry(..)
     , JSONWebToken(..)
+    , GitHubUrlAuth(..)
     ) where
 
 import Prelude ()
@@ -100,18 +103,28 @@ data GitHubToken = GitHubToken
     , expires_at :: GitHubTokenExpiry
     } deriving (Generic, Show)
 instance FromJSON GitHubToken
+instance ToJSON GitHubToken
 
 newtype GitHubTokenBody = GitHubTokenBody Text
     deriving (Generic, Show)
 instance FromJSON GitHubTokenBody
+instance ToJSON GitHubTokenBody
 instance TextGetter GitHubTokenBody
     where getText (GitHubTokenBody val) = val
 
 newtype GitHubTokenExpiry = GitHubTokenExpiry Text
     deriving (Generic, Show)
 instance FromJSON GitHubTokenExpiry
+instance ToJSON GitHubTokenExpiry
 
 newtype JSONWebToken = JSONWebToken ByteString
     deriving (Show)
 instance TextGetter JSONWebToken
     where getBS (JSONWebToken val) = val
+
+newtype GitHubUrlAuth = GitHubUrlAuth Text
+    deriving (Generic, Show)
+instance FromJSON GitHubUrlAuth
+instance TextGetter GitHubUrlAuth
+    where getText (GitHubUrlAuth val) = val
+

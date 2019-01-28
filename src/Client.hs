@@ -21,7 +21,7 @@
 
 module Client
     ( clientCreateManager
-    , clientGithubAuth
+    , clientGitHubAuth
     ) where
 
 import Prelude ()
@@ -50,11 +50,10 @@ createJWT key iss dur = do
             , "exp" .= (now + (getInt dur))
             , "iss" .= (getText iss)
             ]
+    let base64Json = Base64URL.encode . ByteStringLazy.toStrict . encodePretty
     let bs = (base64Json header) <> "." <> (base64Json body)
     sign <- Base64URL.encode <$> digestSignRS256 (getText key) bs
     return $ JSONWebToken $ ByteString.concat [bs, ".", sign]
-    where
-        base64Json = Base64URL.encode . ByteStringLazy.toStrict . encodePretty
 
 -- todo: timeouts
 clientCreateManager ::Config -> IO Manager
@@ -70,12 +69,11 @@ clientCreateManager _ =
 --     withResponse req (manager app) $ \resp ->
 --         httpResponseBodyText url resp mb
 
-clientGithubAuth :: App -> IO GitHubToken
-clientGithubAuth app = do
-    let ccf = client . config $ app
-    let gcf = github ccf
+-- todo : ioref
+clientGitHubAuth :: Manager -> ClientConfig -> GitHubConfig -> IO GitHubToken
+clientGitHubAuth man ccf gcf = do
     jwt <- createJWT (keyPath gcf) (appId gcf) (jwtDurationSecs gcf)
-    let url = "https://api.github.com/app/installations/" <> (getText . appInstallId $ gcf) <> "/access_tokens"
+    let url = textFormat (getText . urlAuth $ gcf) $ fromList [getText . appInstallId $ gcf]
     let req = ((parseRequest_ . unpack) url)
             { Client.method = "POST"
             , Client.requestHeaders =
@@ -84,7 +82,7 @@ clientGithubAuth app = do
                 , ("Accept", "application/vnd.github.machine-man-preview+json")
                 ]
             }
-    withResponse req (manager app) $ \resp -> do
+    withResponse req man $ \resp -> do
         let HTTPTypes.Status st _ = Client.responseStatus resp
         when (201 /= st) $ error "Token error" -- todo: details
         httpResponseBodyJSON url resp (getInt . maxResponseSizeBytes $ ccf)

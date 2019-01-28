@@ -44,6 +44,7 @@ data App = App
 data Config = Config
     { server :: ServerConfig
     , client :: ClientConfig
+    , github :: GitHubConfig
     } deriving (Generic, Show)
 instance FromJSON Config
 
@@ -59,7 +60,6 @@ instance FromJSON ServerConfig
 data ClientConfig = ClientConfig
     { maxResponseSizeBytes :: MaxResponseSizeBytes
     , userAgent :: UserAgent
-    , github :: GitHubConfig
     } deriving (Generic, Show)
 instance FromJSON ClientConfig
 
@@ -68,6 +68,7 @@ data GitHubConfig = GitHubConfig
     , appInstallId :: GitHubAppInstallId
     , keyPath :: GitHubKeyPath
     , jwtDurationSecs :: JWTDurationSecs
+    , urlAuth :: GitHubUrlAuth
     } deriving (Generic, Show)
 instance FromJSON GitHubConfig
 

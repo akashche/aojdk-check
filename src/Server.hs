@@ -20,7 +20,8 @@
 {-# LANGUAGE Strict #-}
 
 module Server
-    ( RespMsg(..)
+    ( Handler
+    , RespMsg(..)
     , serverRun
     -- handlers
     , server404Handler
@@ -32,7 +33,6 @@ module Server
 import Prelude ()
 import VtUtils.Prelude
 
-import qualified Data.Aeson.Encode.Pretty as AesonPretty
 import qualified Data.HashMap.Strict as HashMap
 import qualified Network.HTTP.Types as HTTPTypes
 import qualified Network.Wai.Handler.Warp as Warp
@@ -53,19 +53,19 @@ server404Handler ::Handler
 server404Handler req respond = do
     let err = RespMsg "Not Found" 404 (httpRequestPath req)
     respond $ responseLBS HTTPTypes.status404 [httpContentTypeJSON] $
-        AesonPretty.encodePretty err
+        encodePretty err
 
 server500Handler :: SomeException -> Handler
 server500Handler exc req respond = do
     let err = RespMsg (textShow exc) 500 (httpRequestPath req)
     respond $ responseLBS HTTPTypes.status500 [httpContentTypeJSON] $
-        AesonPretty.encodePretty err
+        encodePretty err
 
 serverPingHandler :: App -> Handler
 serverPingHandler _ req respond = do
     let pong = RespMsg "pong" 200 (httpRequestPath req)
     respond $ responseLBS HTTPTypes.status200 [httpContentTypeJSON] $
-        AesonPretty.encodePretty pong
+        encodePretty pong
 
 serverWebHookHandler :: App -> Handler
 serverWebHookHandler app req respond = do
@@ -76,7 +76,7 @@ serverWebHookHandler app req respond = do
      else do
         let err = RespMsg "Not Found" 404 (httpRequestPath req)
         respond $ responseLBS HTTPTypes.status404 [httpContentTypeJSON] $
-            AesonPretty.encodePretty err
+            encodePretty err
 
 handlers :: HashMap Text (App -> Handler)
 handlers = HashMap.fromList

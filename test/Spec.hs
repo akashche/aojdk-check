@@ -37,9 +37,7 @@ main :: IO ()
 main = do
     cf <- jsonDecodeFile "test/data/config-test.json"
     man <- clientCreateManager cf
-    let tpath = get ((tokenFilePath . github . client) cf :: TokenFilePath)
-    token <- readFile (unpack tpath)
-    let app = App cf man (GitHubToken token)
+    let app = App cf man
     hunitMain $ fromList
         [ serverTest app
         , clientTest app

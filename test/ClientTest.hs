@@ -26,12 +26,44 @@ import Prelude ()
 import VtUtils.Prelude
 -- import qualified Network.HTTP.Client as Client
 -- import qualified Network.HTTP.Types as HTTPTypes
+import qualified Network.HTTP.Types as HTTPTypes
+import qualified Network.Wai.Handler.Warp as Warp
 
 import App
--- import Client
+import Client
+import Data
+import Server
 
-test1 :: App -> Test
-test1 _app = TestLabel "test1" $ TestCase $ do
+authHandler :: Handler
+authHandler req respond = do
+     if "POST" == requestMethod req then do
+        let hm = httpRequestHeadersMap req
+        if (isJust $ lookup "User-Agent" hm )
+            && (isJust $ lookup "Authorization" hm)
+            && (isJust $ lookup "Accept" hm) then
+            respond $ responseLBS HTTPTypes.status201 [httpContentTypeJSON] $
+                encodePretty $ GitHubToken
+                    { token = GitHubTokenBody "v1.abf14674c5d40c2f7de6833980566fdf5b975b1a"
+                    , expires_at = GitHubTokenExpiry "2019-01-28T22:58:28Z"
+                    }
+        else do
+            respond $ responseLBS HTTPTypes.status400 [httpContentTypeJSON] $
+                encodePretty $ RespMsg "Invalid request" 400 (httpRequestPath req)
+     else
+        respond $ responseLBS HTTPTypes.status400 [httpContentTypeJSON] $
+            encodePretty $ RespMsg "Invalid method" 400 (httpRequestPath req)
+
+testAuth :: App -> Test
+testAuth app = TestLabel "testAuth" $ TestCase $ do
+    Warp.withApplication (return $ authHandler) $ \port ->  do
+        let gcf = (github . config $ app)
+                { urlAuth = GitHubUrlAuth $
+                    textFormat (getText . urlAuth . github . config $ app) $
+                        fromList [(textShow port), "{}"]
+                }
+        tok <- clientGitHubAuth (manager app) (client . config $ app) gcf
+        putStrLn $ textShow tok
+
 --     tx <- clientFetchWebrevPatch man "http://cr.openjdk.java.net/~akasko/jdk8u/8035653/webrev.00/jdk.patch"
 --     tx <- clientFetchWebrevPatch app "https://github.com/akashche/aojdk-check/commit/e14c27642514fc2fe08f528a8a1b6678c3ab95bf.patch"
 --     putStrLn $ tx
@@ -97,5 +129,5 @@ test1 _app = TestLabel "test1" $ TestCase $ do
 
 clientTest :: App -> Test
 clientTest app = TestLabel "ClientTest" $ TestList
-    [ test1 app
+    [ testAuth app
     ]

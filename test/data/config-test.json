@@ -1,14 +1,19 @@
 {
-  "server": {
-      "tcpPort": 8088
-  },
+    "server": {
+        "tcpPort": 8088
+    },
 
-  "client": {
-      "maxResponseSizeBytes": 32768,
+    "client": {
+        "maxResponseSizeBytes": 32768,
+        "userAgent": "Mozilla/5.0 (compatible; aojdkcheckbot/1.0; +https://github.com/akashche/aojdk-check)"
+    },
 
-      "github": {
-        "user": "akashche",
-        "tokenFilePath": ".secret/token.txt"
-      }
-  }
+    "github": {
+        "appId": "23953",
+        "appInstallId": "602759",
+        "keyPath": "test/data/test.private-key.pem",
+        "jwtDurationSecs": 600,
+        "urlAuth": "http://127.0.0.1:{}/{}"
+    }
 }
+
