@@ -24,17 +24,12 @@ module GitTest (gitTest) where
 import Test.HUnit
 import Prelude ()
 import VtUtils.Prelude
-import qualified Data.Text as Text
 import qualified System.Process as Process
 
 import Git
 
 test1 :: Test
 test1 = TestLabel "test1" $ TestCase $ do
-    let user = "akashche"
-    token <- Text.strip <$> readFile ".secret/token.txt"
-    let url = "https://" <> user <> ":" <> token <> "@github.com/akashche/push-test.git"
-
     Process.callProcess "/bin/rm" ["-rf", "work"]
     Process.callProcess "/bin/mkdir" ["work"]
     Process.callProcess "/usr/bin/git" ["init", "work/repo"]
@@ -60,10 +55,8 @@ test1 = TestLabel "test1" $ TestCase $ do
                 ]
         gitCommitBranch repo branch paths "test" "test@test.org" "test msg"
 --         gitPushBranch repo branch url
-        let _ = url
-        return ()
 
-    Process.callProcess "/usr/bin/git" ["--git-dir", "work/repo/.git", "--work-tree", "work/repo", "status"]
+--     Process.callProcess "/usr/bin/git" ["--git-dir", "work/repo/.git", "--work-tree", "work/repo", "status"]
     return ()
 
 gitTest :: Test

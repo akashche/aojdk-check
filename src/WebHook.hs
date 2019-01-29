@@ -29,6 +29,6 @@ import VtUtils.Prelude
 import Data
 
 webHookReceive :: AppState -> Value -> IO ()
-webHookReceive _ val = do
-    putStrLn $ jsonEncodeText val
+webHookReceive _ _val = do
+--     putStrLn $ jsonEncodeText val
     return ()

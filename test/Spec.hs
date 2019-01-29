@@ -29,8 +29,8 @@ import Client
 import ClientTest
 import DataTest
 import DigestTest
--- import GitTest
--- import HgTest
+import GitTest
+import HgTest
 import PatchTest
 import ServerTest
 
@@ -44,8 +44,8 @@ main = do
         [ clientTest app
         , dataTest
         , digestTest
---         , gitTest
---         , hgTest
+        , gitTest
+        , hgTest
         , patchTest
         , serverTest app
         ]
