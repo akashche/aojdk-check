@@ -33,6 +33,7 @@ import qualified Data.ByteString.Lazy as ByteStringLazy
 import qualified Network.HTTP.Client as Client
 import qualified Network.HTTP.Client.OpenSSL as OpenSSL
 import qualified Network.HTTP.Types as HTTPTypes
+import qualified Data.IORef as IORef
 import qualified OpenSSL.Session as OpenSSLSession
 
 import Config
@@ -72,45 +73,34 @@ clientCreateManager _ =
 
 clientGitHubAuth :: Manager -> ClientConfig -> GitHubConfig -> GitHubTokenHolder -> IO GitHubToken
 clientGitHubAuth man ccf gcf th = do
-    let GitHubTokenHolder mv = th
-    -- lock
-    tok <- MVar.takeMVar mv
+    tok <- IORef.readIORef $ tokenRef th
     now <- (floor . utcTimeToPOSIXSeconds) <$> getCurrentTime
     let exp = floor . utcTimeToPOSIXSeconds . getTime . expires_at $ tok
     let min = getInt . tokenMinRemainingSecs $ gcf
     if exp - min > now then do
-        -- unlock
-        MVar.putMVar mv tok
         return tok
-    else do
+    else
         -- slow path
-        catch
-            ( do
-                jwt <- createJWT (keyPath gcf) (appId gcf) (jwtDurationSecs gcf)
-                let url = textFormat (getText . urlAuth $ gcf) $ fromList [getText . appInstallId $ gcf]
-                let req = ((parseRequest_ . unpack) url)
-                        { Client.method = "POST"
-                        , Client.requestHeaders =
-                            [ ("User-Agent", (getBS . userAgent $ ccf))
-                            , ("Authorization", "Bearer " <> (getBS jwt))
-                            , ("Accept", "application/vnd.github.machine-man-preview+json")
-                            ]
-                        }
-                ntok <- withResponse req man $ \resp -> do
-                    let mb = getInt . maxResponseSizeBytes $ ccf
-                    let HTTPTypes.Status st _ = Client.responseStatus resp
-                    when (201 /= st) $ do
-                        tx <- httpResponseBodyText url resp mb
-                        error . unpack $
-                               "Error obtaining GitHub token,"
-                            <> " status: [" <> (textShow st) <> "],"
-                            <> " resp: [" <> tx <> "]"
-                    httpResponseBodyJSON url resp mb :: IO GitHubToken
-                -- unlock
-                MVar.putMVar mv ntok
-                return ntok )
-            ( \(e :: SomeException) -> do
-                -- unlock
-                MVar.putMVar mv tok
-                error . unpack $ textShow e )
-
+        MVar.withMVar (lock th) $ \_ -> do
+            jwt <- createJWT (keyPath gcf) (appId gcf) (jwtDurationSecs gcf)
+            let url = textFormat (getText . urlAuth $ gcf) $ fromList [getText . appInstallId $ gcf]
+            let req = ((parseRequest_ . unpack) url)
+                    { Client.method = "POST"
+                    , Client.requestHeaders =
+                        [ ("User-Agent", (getBS . userAgent $ ccf))
+                        , ("Authorization", "Bearer " <> (getBS jwt))
+                        , ("Accept", "application/vnd.github.machine-man-preview+json")
+                        ]
+                    }
+            ntok <- withResponse req man $ \resp -> do
+                let mb = getInt . maxResponseSizeBytes $ ccf
+                let HTTPTypes.Status st _ = Client.responseStatus resp
+                when (201 /= st) $ do
+                    tx <- httpResponseBodyText url resp mb
+                    error . unpack $
+                           "Error obtaining GitHub token,"
+                        <> " status: [" <> (textShow st) <> "],"
+                        <> " resp: [" <> tx <> "]"
+                httpResponseBodyJSON url resp mb :: IO GitHubToken
+            IORef.atomicWriteIORef (tokenRef th) ntok
+            return ntok

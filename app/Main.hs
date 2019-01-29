@@ -23,7 +23,6 @@ module Main where
 
 import Prelude ()
 import VtUtils.Prelude
-import qualified Control.Concurrent.MVar as MVar
 import qualified System.Environment as Environment
 
 import Data
@@ -41,6 +40,6 @@ main = do
         let cfpath = args ! 0
         cf <- jsonDecodeFile cfpath :: IO Config
         man <- clientCreateManager cf
-        th <- GitHubTokenHolder <$> MVar.newMVar emptyGitHubToken
+        th <- createGitHubTokenHolder
         putStrLn $ "Starting server ..."
         serverRun $ AppState cf man th

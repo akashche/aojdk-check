@@ -24,6 +24,7 @@ module ClientTest (clientTest) where
 import Test.HUnit
 import Prelude ()
 import VtUtils.Prelude
+import qualified Data.IORef as IORef
 -- import qualified Network.HTTP.Client as Client
 -- import qualified Network.HTTP.Types as HTTPTypes
 import qualified Network.HTTP.Types as HTTPTypes
@@ -34,35 +35,46 @@ import Config
 import Data
 import Server
 
-authHandler :: Application
-authHandler req respond = do
-     if "POST" == requestMethod req then do
-        let hm = httpRequestHeadersMap req
-        if (isJust $ lookup "User-Agent" hm )
-            && (isJust $ lookup "Authorization" hm)
-            && (isJust $ lookup "Accept" hm) then
-            respond $ responseLBS HTTPTypes.status201 [httpContentTypeJSON] $
-                encodePretty $ GitHubToken
-                    { token = GitHubTokenBody "v1.abf14674c5d40c2f7de6833980566fdf5b975b1a"
-                    , expires_at = GitHubTokenExpiry "2019-01-28T22:58:28Z"
-                    }
-        else do
+authHandler :: (IORef.IORef Int) -> Application
+authHandler counter req respond = do
+    count <- IORef.readIORef counter
+    if 0 == count then do
+        IORef.atomicModifyIORef' counter $ \val -> (val + 1, ())
+        if "POST" == requestMethod req then do
+            nowSecs <- (floor . utcTimeToPOSIXSeconds) <$> getCurrentTime :: IO Int
+            let dt = posixSecondsToUTCTime $ fromIntegral $ nowSecs + 1200
+            let hm = httpRequestHeadersMap req
+            if (isJust $ lookup "User-Agent" hm )
+                && (isJust $ lookup "Authorization" hm)
+                && (isJust $ lookup "Accept" hm) then
+                respond $ responseLBS HTTPTypes.status201 [httpContentTypeJSON] $
+                    encodePretty $ GitHubToken
+                        { token = GitHubTokenBody "v1.abf14674c5d40c2f7de6833980566fdf5b975b1a"
+                        , expires_at = GitHubTokenExpiry $ dateFormat "%Y-%m-%dT%H:%M:%SZ" dt
+                        }
+            else do
+                respond $ responseLBS HTTPTypes.status400 [httpContentTypeJSON] $
+                    encodePretty $ RespMsg "Invalid request" 400 (httpRequestPath req)
+        else
             respond $ responseLBS HTTPTypes.status400 [httpContentTypeJSON] $
-                encodePretty $ RespMsg "Invalid request" 400 (httpRequestPath req)
-     else
+                encodePretty $ RespMsg "Invalid method" 400 (httpRequestPath req)
+    else
         respond $ responseLBS HTTPTypes.status400 [httpContentTypeJSON] $
-            encodePretty $ RespMsg "Invalid method" 400 (httpRequestPath req)
+            encodePretty $ RespMsg "Cache fail" 400 (httpRequestPath req)
+
 
 testAuth :: AppState -> Test
 testAuth app = TestLabel "testAuth" $ TestCase $ do
-    Warp.withApplication (return $ authHandler) $ \port ->  do
+    counter <- IORef.newIORef (0 :: Int)
+    Warp.withApplication (return $ authHandler counter) $ \port ->  do
         let gcf = (github . config $ app)
                 { urlAuth = GitHubUrlAuth $
                     textFormat (getText . urlAuth . github . config $ app) $
                         fromList [(textShow port), "{}"]
                 }
-        tok <- clientGitHubAuth (manager app) (client . config $ app) gcf (githubToken app)
-        putStrLn $ textShow tok
+        tok1 <- clientGitHubAuth (manager app) (client . config $ app) gcf (githubToken app)
+        tok2 <- clientGitHubAuth (manager app) (client . config $ app) gcf (githubToken app)
+        assertEqual "same token" ((getText . token) tok1) ((getText . token) tok2)
 
 --     tx <- clientFetchWebrevPatch man "http://cr.openjdk.java.net/~akasko/jdk8u/8035653/webrev.00/jdk.patch"
 --     tx <- clientFetchWebrevPatch app "https://github.com/akashche/aojdk-check/commit/e14c27642514fc2fe08f528a8a1b6678c3ab95bf.patch"

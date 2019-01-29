@@ -22,9 +22,9 @@
 module Data
     ( AppState(..)
     , GitHubTokenHolder(..)
+    , createGitHubTokenHolder
     -- types
     , GitHubToken(..)
-    , emptyGitHubToken
     , GitHubTokenBody(..)
     , GitHubTokenExpiry(..)
     , JSONWebToken(..)
@@ -36,6 +36,7 @@ module Data
 
 import Prelude ()
 import VtUtils.Prelude
+import qualified Data.IORef as IORef
 import qualified Control.Concurrent.MVar as MVar
 import qualified Data.Time.Format as TimeFormat
 
@@ -59,10 +60,6 @@ data GitHubToken = GitHubToken
 instance FromJSON GitHubToken
 instance ToJSON GitHubToken
 
-emptyGitHubToken :: GitHubToken
-emptyGitHubToken =
-    GitHubToken (GitHubTokenBody "") (GitHubTokenExpiry "1970-01-01T00:00:00Z")
-
 newtype GitHubTokenBody = GitHubTokenBody Text
     deriving (Generic, Show)
 instance FromJSON GitHubTokenBody
@@ -81,7 +78,17 @@ instance TimeGetter GitHubTokenExpiry where
             Nothing -> error . unpack $
                 "Error parsing token, date: [" <> val <> "]"
 
-newtype GitHubTokenHolder = GitHubTokenHolder (MVar.MVar GitHubToken)
+data GitHubTokenHolder = GitHubTokenHolder
+    { tokenRef :: IORef.IORef GitHubToken
+    , lock :: MVar.MVar Bool
+    }
+
+createGitHubTokenHolder :: IO GitHubTokenHolder
+createGitHubTokenHolder = do
+    let tok = GitHubToken (GitHubTokenBody "") (GitHubTokenExpiry "1970-01-01T00:00:00Z")
+    ref <- IORef.newIORef tok
+    mv <- MVar.newMVar True
+    return $ GitHubTokenHolder ref mv
 
 newtype JSONWebToken = JSONWebToken ByteString
     deriving Show

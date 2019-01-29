@@ -22,7 +22,6 @@
 import Prelude ()
 import VtUtils.Prelude
 import VtUtils.HUnit
-import qualified Control.Concurrent.MVar as MVar
 
 import Data
 import Client
@@ -39,7 +38,7 @@ main :: IO ()
 main = do
     cf <- jsonDecodeFile "test/data/config-test.json"
     man <- clientCreateManager cf
-    th <- GitHubTokenHolder <$> MVar.newMVar emptyGitHubToken
+    th <- createGitHubTokenHolder
     let app = AppState cf man th
     hunitMain $ fromList
         [ clientTest app
