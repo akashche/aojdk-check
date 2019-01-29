@@ -65,8 +65,11 @@ instance IntGetter ServerTcpPort where
 -- client
 
 data ClientConfig = ClientConfig
-    { maxResponseSizeBytes :: ClientMaxResponseSizeBytes
-    , userAgent :: ClientUserAgent
+    { userAgent :: ClientUserAgent
+    , maxResponseSizeBytes :: ClientMaxResponseSizeBytes
+    , maxCachedConnectionsPerHost :: ClientMaxCachedConnectionsPerHost
+    , maxIdleConnections :: ClientMaxIdleConnections
+    , maxResponseTimeoutMillis :: ClientMaxResponseTimeout
     } deriving (Generic, Show)
 instance FromJSON ClientConfig
 
@@ -81,6 +84,24 @@ newtype ClientMaxResponseSizeBytes = ClientMaxResponseSizeBytes Int
 instance FromJSON ClientMaxResponseSizeBytes
 instance IntGetter ClientMaxResponseSizeBytes where
     getInt (ClientMaxResponseSizeBytes val) = val
+
+newtype ClientMaxCachedConnectionsPerHost = ClientMaxCachedConnectionsPerHost Int
+    deriving (Generic, Show)
+instance FromJSON ClientMaxCachedConnectionsPerHost
+instance IntGetter ClientMaxCachedConnectionsPerHost where
+    getInt (ClientMaxCachedConnectionsPerHost val) = val
+
+newtype ClientMaxIdleConnections = ClientMaxIdleConnections Int
+    deriving (Generic, Show)
+instance FromJSON ClientMaxIdleConnections
+instance IntGetter ClientMaxIdleConnections where
+    getInt (ClientMaxIdleConnections val) = val
+
+newtype ClientMaxResponseTimeout = ClientMaxResponseTimeout Int
+    deriving (Generic, Show)
+instance FromJSON ClientMaxResponseTimeout
+instance IntGetter ClientMaxResponseTimeout where
+    getInt (ClientMaxResponseTimeout val) = val
 
 -- github
 

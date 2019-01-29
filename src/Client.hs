@@ -57,11 +57,15 @@ createJWT key iss dur = do
     sign <- Base64URL.encode <$> digestSignRS256 (getText key) bs
     return $ JSONWebToken $ ByteString.concat [bs, ".", sign]
 
--- todo: timeouts
 clientCreateManager ::Config -> IO Manager
-clientCreateManager _ =
-    OpenSSL.withOpenSSL $
-        newManager (OpenSSL.opensslManagerSettings OpenSSLSession.context)
+clientCreateManager cf =
+    OpenSSL.withOpenSSL $ newManager $
+        (OpenSSL.opensslManagerSettings OpenSSLSession.context)
+            { Client.managerConnCount = getInt . maxCachedConnectionsPerHost . client $ cf
+            , Client.managerIdleConnectionCount = getInt . maxIdleConnections . client $ cf
+            , Client.managerResponseTimeout = Client.responseTimeoutMicro $
+                1000 * (getInt . maxResponseTimeoutMillis . client $ cf)
+            }
 
 -- todo: fix args
 -- clientFetchWebrevPatch :: App -> Text -> IO Text

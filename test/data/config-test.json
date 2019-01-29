@@ -4,8 +4,11 @@
     },
 
     "client": {
+        "userAgent": "Mozilla/5.0 (compatible; aojdkcheckbot/1.0; +https://github.com/akashche/aojdk-check)",
         "maxResponseSizeBytes": 32768,
-        "userAgent": "Mozilla/5.0 (compatible; aojdkcheckbot/1.0; +https://github.com/akashche/aojdk-check)"
+        "maxCachedConnectionsPerHost": 4,
+        "maxIdleConnections": 8,
+        "maxResponseTimeoutMillis": 5000
     },
 
     "github": {
