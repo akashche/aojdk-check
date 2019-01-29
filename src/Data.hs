@@ -28,6 +28,7 @@ module Data
     , GitHubTokenBody(..)
     , GitHubTokenExpiry(..)
     , JSONWebToken(..)
+    , FetchURL(..)
     -- getters re-export
     , TextGetter(..)
     , IntGetter(..)
@@ -94,4 +95,9 @@ newtype JSONWebToken = JSONWebToken ByteString
     deriving Show
 instance TextGetter JSONWebToken where
     getBS (JSONWebToken val) = val
+
+newtype FetchURL = FetchURL Text
+    deriving Show
+instance TextGetter FetchURL where
+    getText (FetchURL val) = val
 

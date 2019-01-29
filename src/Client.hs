@@ -22,6 +22,7 @@
 module Client
     ( clientCreateManager
     , clientGitHubAuth
+    , clientFetchPatch
     ) where
 
 import Prelude ()
@@ -67,14 +68,6 @@ clientCreateManager cf =
                 1000 * (getInt . maxResponseTimeoutMillis . client $ cf)
             }
 
--- todo: fix args
--- clientFetchWebrevPatch :: App -> Text -> IO Text
--- clientFetchWebrevPatch app url = do
---     let mb = get ((maxResponseSizeBytes . client . config) app :: MaxResponseSizeBytes)
---     let req = (parseRequest_ . unpack) url
---     withResponse req (manager app) $ \resp ->
---         httpResponseBodyText url resp mb
-
 clientGitHubAuth :: Manager -> ClientConfig -> GitHubConfig -> GitHubTokenHolder -> IO GitHubToken
 clientGitHubAuth man ccf gcf th = do
     tok <- IORef.readIORef $ tokenRef th
@@ -108,3 +101,16 @@ clientGitHubAuth man ccf gcf th = do
                 httpResponseBodyJSON url resp mb :: IO GitHubToken
             IORef.atomicWriteIORef (tokenRef th) ntok
             return ntok
+
+clientFetchPatch :: Manager -> ClientConfig -> FetchURL -> IO Text
+clientFetchPatch man ccf url = do
+    let req = (parseRequest_ . getString $ url)
+            { Client.method = "GET"
+            , Client.requestHeaders =
+                [ ("User-Agent", (getBS . userAgent $ ccf))
+                ]
+            }
+    let mb = getInt . maxResponseSizeBytes $ ccf
+    withResponse req man $ \resp ->
+        httpResponseBodyText (getText url) resp mb
+

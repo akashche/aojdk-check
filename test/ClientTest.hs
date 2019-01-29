@@ -62,6 +62,10 @@ authHandler counter req respond = do
         respond $ responseLBS HTTPTypes.status400 [httpContentTypeJSON] $
             encodePretty $ RespMsg "Cache fail" 400 (httpRequestPath req)
 
+fetchHandler :: Application
+fetchHandler _ respond =
+    respond $ responseLBS HTTPTypes.status201 [("Content-Type", "text/plain")] $ "foo"
+
 
 testAuth :: AppState -> Test
 testAuth app = TestLabel "testAuth" $ TestCase $ do
@@ -76,16 +80,13 @@ testAuth app = TestLabel "testAuth" $ TestCase $ do
         tok2 <- clientGitHubAuth (manager app) (client . config $ app) gcf (githubToken app)
         assertEqual "same token" ((getText . token) tok1) ((getText . token) tok2)
 
---     tx <- clientFetchWebrevPatch man "http://cr.openjdk.java.net/~akasko/jdk8u/8035653/webrev.00/jdk.patch"
---     tx <- clientFetchWebrevPatch app "https://github.com/akashche/aojdk-check/commit/e14c27642514fc2fe08f528a8a1b6678c3ab95bf.patch"
---     putStrLn $ tx
---     assertBool "non-empty" $
---         Text.length tx > 0
---     let agent = "Mozilla/5.0 (compatible; aojdkcheckbot/2.1; +https://github.com/akashche/aojdk-check)"
---     let mb = get ((maxResponseSizeBytes . client . config) app :: MaxResponseSizeBytes)
---     token <- clientGithubAuth app ".secret/aojdk-check-test.2019-01-20.private-key.pem"
---     putStrLn $ token
---     let token = "v1.78cb78537df05374770ccae40c77889ad25a8ec6"
+testFetch :: AppState -> Test
+testFetch app = TestLabel "testFetch" $ TestCase $ do
+    Warp.withApplication (return $ fetchHandler) $ \port ->  do
+        let url = "http://127.0.0.1:" <> (textShow port) <> "/"
+        res <- clientFetchPatch (manager app) (client . config $ app) (FetchURL url)
+        assertEqual "fetch" "foo" $ res
+
 
     -- PR
     {--
@@ -142,4 +143,5 @@ testAuth app = TestLabel "testAuth" $ TestCase $ do
 clientTest :: AppState -> Test
 clientTest app = TestLabel "ClientTest" $ TestList
     [ testAuth app
+    , testFetch app
     ]

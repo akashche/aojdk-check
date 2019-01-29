@@ -33,6 +33,8 @@ class TextGetter a where
     getText = decodeUtf8 . getBS
     getBS :: a -> ByteString
     getBS = encodeUtf8 . getText
+    getString :: a -> String
+    getString = unpack . getText
 
 class IntGetter a where
     getInt :: a -> Int
