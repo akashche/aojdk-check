@@ -32,9 +32,12 @@ module Config
     , GitHubConfig(..)
     , GitHubAppId(..)
     , GitHubAppInstallId(..)
+    , GitHubAccountName(..)
+    , GitHubRepoName(..)
     , GitHubKeyPath(..)
     , GitHubJWTDurationSecs(..)
     , GitHubUrlAuth(..)
+    , GitHubUrlCreatePullRequest(..)
     ) where
 
 import Prelude ()
@@ -108,10 +111,13 @@ instance IntGetter ClientMaxResponseTimeout where
 data GitHubConfig = GitHubConfig
     { appId :: GitHubAppId
     , appInstallId :: GitHubAppInstallId
+    , accountName :: GitHubAccountName
+    , repoName :: GitHubRepoName
     , keyPath :: GitHubKeyPath
     , jwtDurationSecs :: GitHubJWTDurationSecs
-    , urlAuth :: GitHubUrlAuth
     , tokenMinRemainingSecs :: GitHubTokenMinRemainingSecs
+    , urlAuth :: GitHubUrlAuth
+    , urlCreatePullRequest :: GitHubUrlCreatePullRequest
     } deriving (Generic, Show)
 instance FromJSON GitHubConfig
 
@@ -127,6 +133,18 @@ instance FromJSON GitHubAppInstallId
 instance TextGetter GitHubAppInstallId where
     getText (GitHubAppInstallId val) = val
 
+newtype GitHubAccountName = GitHubAccountName Text
+    deriving (Generic, Show)
+instance FromJSON GitHubAccountName
+instance TextGetter GitHubAccountName where
+    getText (GitHubAccountName val) = val
+
+newtype GitHubRepoName = GitHubRepoName Text
+    deriving (Generic, Show)
+instance FromJSON GitHubRepoName
+instance TextGetter GitHubRepoName where
+    getText (GitHubRepoName val) = val
+
 newtype GitHubKeyPath = GitHubKeyPath Text
     deriving (Generic, Show)
 instance FromJSON GitHubKeyPath
@@ -139,14 +157,21 @@ instance FromJSON GitHubJWTDurationSecs
 instance IntGetter GitHubJWTDurationSecs where
     getInt (GitHubJWTDurationSecs val) = val
 
+newtype GitHubTokenMinRemainingSecs = GitHubTokenMinRemainingSecs Int
+    deriving (Generic, Show)
+instance FromJSON GitHubTokenMinRemainingSecs
+instance IntGetter GitHubTokenMinRemainingSecs where
+    getInt (GitHubTokenMinRemainingSecs val) = val
+
 newtype GitHubUrlAuth = GitHubUrlAuth Text
     deriving (Generic, Show)
 instance FromJSON GitHubUrlAuth
 instance TextGetter GitHubUrlAuth where
     getText (GitHubUrlAuth val) = val
 
-newtype GitHubTokenMinRemainingSecs = GitHubTokenMinRemainingSecs Int
+newtype GitHubUrlCreatePullRequest = GitHubUrlCreatePullRequest Text
     deriving (Generic, Show)
-instance FromJSON GitHubTokenMinRemainingSecs
-instance IntGetter GitHubTokenMinRemainingSecs where
-    getInt (GitHubTokenMinRemainingSecs val) = val
+instance FromJSON GitHubUrlCreatePullRequest
+instance TextGetter GitHubUrlCreatePullRequest where
+    getText (GitHubUrlCreatePullRequest val) = val
+

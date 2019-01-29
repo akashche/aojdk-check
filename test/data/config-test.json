@@ -14,10 +14,13 @@
     "github": {
         "appId": "23953",
         "appInstallId": "602759",
+        "accountName": "akashche",
+        "repoName": "pr-checks-test",
         "keyPath": "test/data/test.private-key.pem",
         "jwtDurationSecs": 600,
+        "tokenMinRemainingSecs": 600,
         "urlAuth": "http://127.0.0.1:{}/{}",
-        "tokenMinRemainingSecs": 600
+        "urlCreatePullRequest":  "http://127.0.0.1:{}/{}/{}"
     }
 }
 

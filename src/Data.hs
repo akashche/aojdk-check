@@ -25,10 +25,12 @@ module Data
     , createGitHubTokenHolder
     -- types
     , GitHubToken(..)
+    , emptyGitHubToken
     , GitHubTokenBody(..)
     , GitHubTokenExpiry(..)
     , JSONWebToken(..)
     , FetchURL(..)
+    , GitHubRequestPR(..)
     -- getters re-export
     , TextGetter(..)
     , IntGetter(..)
@@ -61,6 +63,10 @@ data GitHubToken = GitHubToken
 instance FromJSON GitHubToken
 instance ToJSON GitHubToken
 
+emptyGitHubToken :: GitHubToken
+emptyGitHubToken =
+    GitHubToken (GitHubTokenBody "") (GitHubTokenExpiry "1970-01-01T00:00:00Z")
+
 newtype GitHubTokenBody = GitHubTokenBody Text
     deriving (Generic, Show)
 instance FromJSON GitHubTokenBody
@@ -86,8 +92,7 @@ data GitHubTokenHolder = GitHubTokenHolder
 
 createGitHubTokenHolder :: IO GitHubTokenHolder
 createGitHubTokenHolder = do
-    let tok = GitHubToken (GitHubTokenBody "") (GitHubTokenExpiry "1970-01-01T00:00:00Z")
-    ref <- IORef.newIORef tok
+    ref <- IORef.newIORef emptyGitHubToken
     mv <- MVar.newMVar True
     return $ GitHubTokenHolder ref mv
 
@@ -100,4 +105,12 @@ newtype FetchURL = FetchURL Text
     deriving Show
 instance TextGetter FetchURL where
     getText (FetchURL val) = val
+
+data GitHubRequestPR = GitHubRequestPR
+    { title :: Text
+    , head ::  Text
+    , base :: Text
+    , body :: Text
+    } deriving (Generic, Show)
+instance ToJSON GitHubRequestPR
 

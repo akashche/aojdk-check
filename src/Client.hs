@@ -23,6 +23,7 @@ module Client
     ( clientCreateManager
     , clientGitHubAuth
     , clientFetchPatch
+    , clientCreatePullRequest
     ) where
 
 import Prelude ()
@@ -48,13 +49,13 @@ createJWT key iss dur = do
             [ "alg" .= ("RS256" :: Text)
             , "typ" .= ("JWT" :: Text)
             ]
-    let body = object
+    let bod = object
             [ "iat" .= now
             , "exp" .= (now + (getInt dur))
             , "iss" .= (getText iss)
             ]
     let base64Json = Base64URL.encode . ByteStringLazy.toStrict . encodePretty
-    let bs = (base64Json header) <> "." <> (base64Json body)
+    let bs = (base64Json header) <> "." <> (base64Json bod)
     sign <- Base64URL.encode <$> digestSignRS256 (getText key) bs
     return $ JSONWebToken $ ByteString.concat [bs, ".", sign]
 
@@ -96,6 +97,7 @@ clientGitHubAuth man ccf gcf th = do
                     tx <- httpResponseBodyText url resp mb
                     error . unpack $
                            "Error obtaining GitHub token,"
+                        <> " url: [" <> url <> "],"
                         <> " status: [" <> (textShow st) <> "],"
                         <> " resp: [" <> tx <> "]"
                 httpResponseBodyJSON url resp mb :: IO GitHubToken
@@ -113,4 +115,27 @@ clientFetchPatch man ccf url = do
     let mb = getInt . maxResponseSizeBytes $ ccf
     withResponse req man $ \resp ->
         httpResponseBodyText (getText url) resp mb
+
+clientCreatePullRequest :: Manager -> ClientConfig -> GitHubConfig -> GitHubToken -> GitHubRequestPR -> IO ()
+clientCreatePullRequest man ccf gcf tok bod = do
+    let url = textFormat (getText . urlCreatePullRequest $ gcf) $
+            fromList [(getText . accountName $ gcf), (getText . repoName $ gcf)]
+    let req = ((parseRequest_ . unpack) url)
+            { Client.method = "POST"
+            , Client.requestHeaders =
+                [ ("User-Agent", (getBS . userAgent $ ccf))
+                , ("Authorization", "token " <> (getBS . token $ tok))
+                ]
+            , Client.requestBody = Client.RequestBodyLBS . encodePretty $ bod
+            }
+    withResponse req man $ \resp -> do
+        let mb = getInt . maxResponseSizeBytes $ ccf
+        let HTTPTypes.Status st _ = Client.responseStatus resp
+        when (201 /= st) $ do
+            tx <- httpResponseBodyText url resp mb
+            error . unpack $
+                   "Error creating pull request,"
+                <> " url: [" <> url <> "],"
+                <> " status: [" <> (textShow st) <> "],"
+                <> " resp: [" <> tx <> "]"
 

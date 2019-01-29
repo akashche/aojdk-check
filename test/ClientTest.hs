@@ -66,6 +66,16 @@ fetchHandler :: Application
 fetchHandler _ respond =
     respond $ responseLBS HTTPTypes.status201 [("Content-Type", "text/plain")] $ "foo"
 
+prHandler :: Application
+prHandler req respond =
+    if "POST" == requestMethod req then do
+        tx <- httpRequestBodyText req
+        putStrLn $ tx
+        respond $ responseLBS HTTPTypes.status201 [httpContentTypeJSON] $ "{}"
+    else
+        respond $ responseLBS HTTPTypes.status400 [httpContentTypeJSON] $
+            encodePretty $ RespMsg "Invalid method" 400 (httpRequestPath req)
+
 
 testAuth :: AppState -> Test
 testAuth app = TestLabel "testAuth" $ TestCase $ do
@@ -87,27 +97,21 @@ testFetch app = TestLabel "testFetch" $ TestCase $ do
         res <- clientFetchPatch (manager app) (client . config $ app) (FetchURL url)
         assertEqual "fetch" "foo" $ res
 
-
-    -- PR
-    {--
-    let url = "https://api.github.com/repos/akashche/pr-checks-test/pulls"
-    let req = ((parseRequest_ . unpack) url)
-            { Client.method = "POST"
-            , Client.requestHeaders =
-                [ ("User-Agent", agent)
-                , ("Authorization", "token " <> token)
-                ]
-            , Client.requestBody = (Client.RequestBodyLBS . encodePretty) $ object
-                [ "title" .= ("Testing request 1" :: Text)
-                , "head" .= ("test-1" :: Text)
-                , "base" .= ("master" :: Text)
-                , "body" .= ("Request 1 body text" :: Text)
-                ]
-            }
-    withResponse req (manager app) $ \resp -> do
-        tx <- httpResponseBodyText url resp mb
-        putStrLn $ tx
-    --}
+testCreatePR :: AppState -> Test
+testCreatePR app = TestLabel "testCreatePR" $ TestCase $ do
+    Warp.withApplication (return $ prHandler) $ \port ->  do
+        let gcf = (github . config $ app)
+                { urlCreatePullRequest = GitHubUrlCreatePullRequest $
+                    textFormat (getText . urlCreatePullRequest . github . config $ app) $
+                        fromList [(textShow port), "{}", "{}"]
+                }
+        let pl = GitHubRequestPR
+                { title = "test title"
+                , head = "test-branch-1"
+                , base = "test-branch-2"
+                , body = "test body"
+                }
+        clientCreatePullRequest (manager app) (client . config $ app) gcf emptyGitHubToken pl
 
     -- Check
     {--
@@ -144,4 +148,5 @@ clientTest :: AppState -> Test
 clientTest app = TestLabel "ClientTest" $ TestList
     [ testAuth app
     , testFetch app
+    , testCreatePR app
     ]

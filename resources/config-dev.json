@@ -14,9 +14,12 @@
     "github": {
         "appId": "23953",
         "appInstallId": "602759",
+        "accountName": "akashche",
+        "repoName": "pr-checks-test",
         "keyPath": ".secret/aojdk-check-test.2019-01-20.private-key.pem",
         "jwtDurationSecs": 600,
+        "tokenMinRemainingSecs": 600,
         "urlAuth": "https://api.github.com/app/installations/{}/access_tokens",
-        "tokenMinRemainingSecs": 600
+        "urlCreatePullRequest":  "https://api.github.com/repos/{}/{}/pulls"
     }
 }
