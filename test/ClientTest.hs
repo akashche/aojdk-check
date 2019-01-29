@@ -66,16 +66,15 @@ fetchHandler :: Application
 fetchHandler _ respond =
     respond $ responseLBS HTTPTypes.status201 [("Content-Type", "text/plain")] $ "foo"
 
-prHandler :: Application
-prHandler req respond =
+creationHandler :: Application
+creationHandler req respond =
     if "POST" == requestMethod req then do
-        tx <- httpRequestBodyText req
-        putStrLn $ tx
+--         tx <- httpRequestBodyText req
+--         putStrLn $ tx
         respond $ responseLBS HTTPTypes.status201 [httpContentTypeJSON] $ "{}"
     else
         respond $ responseLBS HTTPTypes.status400 [httpContentTypeJSON] $
             encodePretty $ RespMsg "Invalid method" 400 (httpRequestPath req)
-
 
 testAuth :: AppState -> Test
 testAuth app = TestLabel "testAuth" $ TestCase $ do
@@ -99,7 +98,7 @@ testFetch app = TestLabel "testFetch" $ TestCase $ do
 
 testCreatePR :: AppState -> Test
 testCreatePR app = TestLabel "testCreatePR" $ TestCase $ do
-    Warp.withApplication (return $ prHandler) $ \port ->  do
+    Warp.withApplication (return $ creationHandler) $ \port ->  do
         let gcf = (github . config $ app)
                 { urlCreatePullRequest = GitHubUrlCreatePullRequest $
                     textFormat (getText . urlCreatePullRequest . github . config $ app) $
@@ -113,40 +112,26 @@ testCreatePR app = TestLabel "testCreatePR" $ TestCase $ do
                 }
         clientCreatePullRequest (manager app) (client . config $ app) gcf emptyGitHubToken pl
 
-    -- Check
-    {--
-    let url = "https://api.github.com/repos/akashche/pr-checks-test/check-runs"
-    let req = ((parseRequest_ . unpack) url)
-            { Client.method = "POST"
-            , Client.requestHeaders =
-                [ ("User-Agent", agent)
-                , ("Authorization", "token " <> token)
-                , ("Accept", "application/vnd.github.machine-man-preview+json")
-                , ("Accept", "application/vnd.github.antiope-preview+json")
-                ]
-            , Client.requestBody = (Client.RequestBodyLBS . encodePretty) $ object
-                [ "name" .= ("test-check-3" :: Text)
-                , "head_sha" .= ("a816b4f12e843ed8bb00c2adf60cc5dd3757c221" :: Text)
-                , "details_url" .= ("https://github.com/akashche" :: Text)
-                , "external_id" .= ("44" :: Text)
-                ]
-            }
-    withResponse req (manager app) $ \resp -> do
---         tx <- httpResponseBodyText url resp mb
---         putStrLn $ tx
---         let HTTPTypes.Status st _ = Client.responseStatus resp
---         assertEqual "check" 200 $ st
-        json <- httpResponseBodyJSON url resp mb :: IO Value
-        putStrLn $ jsonEncodeText json
-    --}
-
-
-
-    return ()
+testCreateCheck :: AppState -> Test
+testCreateCheck app = TestLabel "testCreateCheck" $ TestCase $ do
+    Warp.withApplication (return $ creationHandler) $ \port ->  do
+        let gcf = (github . config $ app)
+                { urlCreateCheck = GitHubUrlCreateCheck $
+                    textFormat (getText . urlCreateCheck . github . config $ app) $
+                        fromList [(textShow port), "{}", "{}"]
+                }
+        let pl = GitHubRequestCheck
+                { name = "test check"
+                , head_sha = "da39a3ee5e6b4b0d3255bfef95601890afd80709"
+                , details_url = "https://github.com/akashche"
+                , external_id = "42"
+                }
+        clientCreateCheck (manager app) (client . config $ app) gcf emptyGitHubToken pl
 
 clientTest :: AppState -> Test
 clientTest app = TestLabel "ClientTest" $ TestList
     [ testAuth app
     , testFetch app
     , testCreatePR app
+    , testCreateCheck app
     ]

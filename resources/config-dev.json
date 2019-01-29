@@ -20,6 +20,7 @@
         "jwtDurationSecs": 600,
         "tokenMinRemainingSecs": 600,
         "urlAuth": "https://api.github.com/app/installations/{}/access_tokens",
-        "urlCreatePullRequest":  "https://api.github.com/repos/{}/{}/pulls"
+        "urlCreatePullRequest":  "https://api.github.com/repos/{}/{}/pulls",
+        "urlCreateCheck": "https://api.github.com/repos/{}/{}/check-runs"
     }
 }

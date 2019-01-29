@@ -24,6 +24,7 @@ module Client
     , clientGitHubAuth
     , clientFetchPatch
     , clientCreatePullRequest
+    , clientCreateCheck
     ) where
 
 import Prelude ()
@@ -139,3 +140,27 @@ clientCreatePullRequest man ccf gcf tok bod = do
                 <> " status: [" <> (textShow st) <> "],"
                 <> " resp: [" <> tx <> "]"
 
+clientCreateCheck :: Manager -> ClientConfig -> GitHubConfig -> GitHubToken -> GitHubRequestCheck -> IO ()
+clientCreateCheck man ccf gcf tok bod = do
+    let url = textFormat (getText . urlCreateCheck $ gcf) $
+            fromList [(getText . accountName $ gcf), (getText . repoName $ gcf)]
+    let req = ((parseRequest_ . unpack) url)
+            { Client.method = "POST"
+            , Client.requestHeaders =
+                [ ("User-Agent", (getBS . userAgent $ ccf))
+                , ("Authorization", "token " <> (getBS . token $ tok))
+                , ("Accept", "application/vnd.github.machine-man-preview+json")
+                , ("Accept", "application/vnd.github.antiope-preview+json")
+                ]
+            , Client.requestBody = (Client.RequestBodyLBS . encodePretty) $ bod
+            }
+    withResponse req man $ \resp -> do
+        let mb = getInt . maxResponseSizeBytes $ ccf
+        let HTTPTypes.Status st _ = Client.responseStatus resp
+        when (201 /= st) $ do
+            tx <- httpResponseBodyText url resp mb
+            error . unpack $
+                   "Error creating check,"
+                <> " url: [" <> url <> "],"
+                <> " status: [" <> (textShow st) <> "],"
+                <> " resp: [" <> tx <> "]"

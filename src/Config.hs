@@ -38,6 +38,7 @@ module Config
     , GitHubJWTDurationSecs(..)
     , GitHubUrlAuth(..)
     , GitHubUrlCreatePullRequest(..)
+    , GitHubUrlCreateCheck(..)
     ) where
 
 import Prelude ()
@@ -118,6 +119,7 @@ data GitHubConfig = GitHubConfig
     , tokenMinRemainingSecs :: GitHubTokenMinRemainingSecs
     , urlAuth :: GitHubUrlAuth
     , urlCreatePullRequest :: GitHubUrlCreatePullRequest
+    , urlCreateCheck :: GitHubUrlCreateCheck
     } deriving (Generic, Show)
 instance FromJSON GitHubConfig
 
@@ -175,3 +177,8 @@ instance FromJSON GitHubUrlCreatePullRequest
 instance TextGetter GitHubUrlCreatePullRequest where
     getText (GitHubUrlCreatePullRequest val) = val
 
+newtype GitHubUrlCreateCheck = GitHubUrlCreateCheck Text
+    deriving (Generic, Show)
+instance FromJSON GitHubUrlCreateCheck
+instance TextGetter GitHubUrlCreateCheck where
+    getText (GitHubUrlCreateCheck val) = val

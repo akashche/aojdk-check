@@ -31,6 +31,7 @@ module Data
     , JSONWebToken(..)
     , FetchURL(..)
     , GitHubRequestPR(..)
+    , GitHubRequestCheck(..)
     -- getters re-export
     , TextGetter(..)
     , IntGetter(..)
@@ -114,3 +115,10 @@ data GitHubRequestPR = GitHubRequestPR
     } deriving (Generic, Show)
 instance ToJSON GitHubRequestPR
 
+data GitHubRequestCheck = GitHubRequestCheck
+    { name :: Text
+    , head_sha :: Text
+    , details_url :: Text
+    , external_id :: Text
+    } deriving (Generic, Show)
+instance ToJSON GitHubRequestCheck
