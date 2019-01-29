@@ -29,12 +29,12 @@ import VtUtils.Prelude
 import qualified Network.HTTP.Types as HTTPTypes
 import qualified Network.Wai.Handler.Warp as Warp
 
-import App
 import Client
+import Config
 import Data
 import Server
 
-authHandler :: Handler
+authHandler :: Application
 authHandler req respond = do
      if "POST" == requestMethod req then do
         let hm = httpRequestHeadersMap req
@@ -53,7 +53,7 @@ authHandler req respond = do
         respond $ responseLBS HTTPTypes.status400 [httpContentTypeJSON] $
             encodePretty $ RespMsg "Invalid method" 400 (httpRequestPath req)
 
-testAuth :: App -> Test
+testAuth :: AppState -> Test
 testAuth app = TestLabel "testAuth" $ TestCase $ do
     Warp.withApplication (return $ authHandler) $ \port ->  do
         let gcf = (github . config $ app)
@@ -61,7 +61,7 @@ testAuth app = TestLabel "testAuth" $ TestCase $ do
                     textFormat (getText . urlAuth . github . config $ app) $
                         fromList [(textShow port), "{}"]
                 }
-        tok <- clientGitHubAuth (manager app) (client . config $ app) gcf
+        tok <- clientGitHubAuth (manager app) (client . config $ app) gcf (githubToken app)
         putStrLn $ textShow tok
 
 --     tx <- clientFetchWebrevPatch man "http://cr.openjdk.java.net/~akasko/jdk8u/8035653/webrev.00/jdk.patch"
@@ -127,7 +127,7 @@ testAuth app = TestLabel "testAuth" $ TestCase $ do
 
     return ()
 
-clientTest :: App -> Test
+clientTest :: AppState -> Test
 clientTest app = TestLabel "ClientTest" $ TestList
     [ testAuth app
     ]

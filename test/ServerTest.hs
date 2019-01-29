@@ -28,10 +28,10 @@ import qualified Network.HTTP.Client as Client
 import qualified Network.HTTP.Types as HTTPTypes
 import qualified Network.Wai.Handler.Warp as Warp
 
-import App
+import Data
 import Server
 
-test404 :: App -> Test
+test404 :: AppState -> Test
 test404 app = TestLabel "test404" $ TestCase $ do
     Warp.withApplication (return server404Handler) $ \port ->  do
         let url = "http://127.0.0.1:" <> (textShow port) <> "/"
@@ -44,7 +44,7 @@ test404 app = TestLabel "test404" $ TestCase $ do
             assertEqual "status" 404 $ st
     return ()
 
-testPing :: App -> Test
+testPing :: AppState -> Test
 testPing app = TestLabel "testPing" $ TestCase $ do
     Warp.withApplication (return $ serverPingHandler app) $ \port ->  do
         let url = "http://127.0.0.1:" <> (textShow port) <> "/"
@@ -57,7 +57,7 @@ testPing app = TestLabel "testPing" $ TestCase $ do
             assertEqual "status" 200 $ st
     return ()
 
-testWebHook :: App -> Test
+testWebHook :: AppState -> Test
 testWebHook app = TestLabel "testWebHook" $ TestCase $ do
     Warp.withApplication (return $ serverWebHookHandler app) $ \port ->  do
         let url = "http://127.0.0.1:" <> (textShow port) <> "/"
@@ -82,9 +82,9 @@ testWebHook app = TestLabel "testWebHook" $ TestCase $ do
 
     return ()
 
-serverTest :: App -> Test
-serverTest app = TestLabel "ServerTest" (TestList
+serverTest :: AppState -> Test
+serverTest app = TestLabel "ServerTest" $ TestList
     [ test404 app
     , testPing app
     , testWebHook app
-    ])
+    ]

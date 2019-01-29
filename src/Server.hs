@@ -20,8 +20,7 @@
 {-# LANGUAGE Strict #-}
 
 module Server
-    ( Handler
-    , RespMsg(..)
+    ( RespMsg(..)
     , serverRun
     -- handlers
     , server404Handler
@@ -32,12 +31,13 @@ module Server
 
 import Prelude ()
 import VtUtils.Prelude
-
+import qualified Control.Concurrent as Concurrent
 import qualified Data.HashMap.Strict as HashMap
 import qualified Network.HTTP.Types as HTTPTypes
 import qualified Network.Wai.Handler.Warp as Warp
 
-import App
+import Config
+import Data
 import WebHook
 
 data RespMsg = RespMsg
@@ -47,44 +47,42 @@ data RespMsg = RespMsg
     } deriving (Generic, Show)
 instance ToJSON RespMsg
 
-type Handler = Application
-
-server404Handler ::Handler
+server404Handler :: Application
 server404Handler req respond = do
     let err = RespMsg "Not Found" 404 (httpRequestPath req)
     respond $ responseLBS HTTPTypes.status404 [httpContentTypeJSON] $
         encodePretty err
 
-server500Handler :: SomeException -> Handler
+server500Handler :: SomeException -> Application
 server500Handler exc req respond = do
     let err = RespMsg (textShow exc) 500 (httpRequestPath req)
     respond $ responseLBS HTTPTypes.status500 [httpContentTypeJSON] $
         encodePretty err
 
-serverPingHandler :: App -> Handler
+serverPingHandler :: AppState -> Application
 serverPingHandler _ req respond = do
     let pong = RespMsg "pong" 200 (httpRequestPath req)
     respond $ responseLBS HTTPTypes.status200 [httpContentTypeJSON] $
         encodePretty pong
 
-serverWebHookHandler :: App -> Handler
+serverWebHookHandler :: AppState -> Application
 serverWebHookHandler app req respond = do
      if "POST" == requestMethod req then do
         val <- httpRequestBodyJSON req :: IO Value
-        _ <- forkIO $ webHookReceive app val
+        _ <- Concurrent.forkIO $ webHookReceive app val
         respond $ responseLBS HTTPTypes.status200 [] ""
      else do
         let err = RespMsg "Not Found" 404 (httpRequestPath req)
         respond $ responseLBS HTTPTypes.status404 [httpContentTypeJSON] $
             encodePretty err
 
-handlers :: HashMap Text (App -> Handler)
+handlers :: HashMap Text (AppState -> Application)
 handlers = HashMap.fromList
     [ ("/ping", serverPingHandler)
     , ("/webhooks", serverWebHookHandler)
     ]
 
-master :: App -> Handler
+master :: AppState -> Application
 master app req respond = do
     let reqpath = (decodeUtf8 . rawPathInfo) req
     case lookup reqpath handlers of
@@ -95,7 +93,7 @@ master app req respond = do
                 Right rr -> return rr
         Nothing -> server404Handler req respond
 
-serverRun :: App -> IO ()
+serverRun :: AppState -> IO ()
 serverRun app = do
     let ServerTcpPort port = tcpPort . server . config $ app
     let settings = Warp.setPort port Warp.defaultSettings

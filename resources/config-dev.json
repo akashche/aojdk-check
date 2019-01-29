@@ -13,6 +13,7 @@
         "appInstallId": "602759",
         "keyPath": ".secret/aojdk-check-test.2019-01-20.private-key.pem",
         "jwtDurationSecs": 600,
-        "urlAuth": "https://api.github.com/app/installations/{}/access_tokens"
+        "urlAuth": "https://api.github.com/app/installations/{}/access_tokens",
+        "tokenMinRemainingSecs": 600
     }
 }

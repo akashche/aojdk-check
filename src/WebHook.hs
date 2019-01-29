@@ -20,18 +20,15 @@
 {-# LANGUAGE Strict #-}
 
 module WebHook
-    ( App
-    , Config
-    -- webhooks
-    , webHookReceive
+    ( webHookReceive
     ) where
 
 import Prelude ()
 import VtUtils.Prelude
 
-import App
+import Data
 
-webHookReceive :: App -> Value -> IO ()
+webHookReceive :: AppState -> Value -> IO ()
 webHookReceive _ val = do
     putStrLn $ jsonEncodeText val
     return ()

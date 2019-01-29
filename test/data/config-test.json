@@ -13,7 +13,8 @@
         "appInstallId": "602759",
         "keyPath": "test/data/test.private-key.pem",
         "jwtDurationSecs": 600,
-        "urlAuth": "http://127.0.0.1:{}/{}"
+        "urlAuth": "http://127.0.0.1:{}/{}",
+        "tokenMinRemainingSecs": 600
     }
 }
 

@@ -19,28 +19,23 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE Strict #-}
 
-module Main where
+module Getters
+    ( TextGetter(..)
+    , IntGetter(..)
+    , TimeGetter(..)
+    ) where
 
 import Prelude ()
 import VtUtils.Prelude
-import qualified Control.Concurrent.MVar as MVar
-import qualified System.Environment as Environment
 
-import Data
-import Config
-import Client
-import Server
+class TextGetter a where
+    getText :: a -> Text
+    getText = decodeUtf8 . getBS
+    getBS :: a -> ByteString
+    getBS = encodeUtf8 . getText
 
-main :: IO ()
-main = do
-    args <- (fmap pack) <$> fromList <$> Environment.getArgs
-    if 1 /= length args then do
-        putStrLn $ "Error: Invalid arguments specified, args: [" <> textShow args <> "]"
-        putStrLn $ "Usage: [aojdk-check-exe <path/to/config.json>]"
-    else do
-        let cfpath = args ! 0
-        cf <- jsonDecodeFile cfpath :: IO Config
-        man <- clientCreateManager cf
-        th <- GitHubTokenHolder <$> MVar.newMVar emptyGitHubToken
-        putStrLn $ "Starting server ..."
-        serverRun $ AppState cf man th
+class IntGetter a where
+    getInt :: a -> Int
+
+class TimeGetter a where
+    getTime :: a -> UTCTime

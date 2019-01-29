@@ -20,83 +20,37 @@
 {-# LANGUAGE Strict #-}
 
 module Data
-    ( TextGetter(..)
-    , IntGetter(..)
-    , TimeGetter(..)
-    , ServerTcpPort(..)
-    , MaxResponseSizeBytes(..)
-    , UserAgent(..)
-    , GitHubAppId(..)
-    , GitHubAppInstallId(..)
-    , GitHubKeyPath(..)
-    , JWTDurationSecs(..)
+    ( AppState(..)
+    , GitHubTokenHolder(..)
+    -- types
     , GitHubToken(..)
+    , emptyGitHubToken
     , GitHubTokenBody(..)
     , GitHubTokenExpiry(..)
     , JSONWebToken(..)
-    , GitHubUrlAuth(..)
+    -- getters re-export
+    , TextGetter(..)
+    , IntGetter(..)
+    , TimeGetter(..)
     ) where
 
 import Prelude ()
 import VtUtils.Prelude
+import qualified Control.Concurrent.MVar as MVar
+import qualified Data.Time.Format as TimeFormat
 
--- getters
+import Config
+import Getters
 
-class TextGetter a where
-    getText :: a -> Text
-    getText = decodeUtf8 . getBS
-    getBS :: a -> ByteString
-    getBS = encodeUtf8 . getText
+-- app state
 
-class IntGetter a where
-    getInt :: a -> Int
-
-class TimeGetter a where
-    getTime :: a -> UTCTime
+data AppState = AppState
+    { config :: Config
+    , manager :: Manager
+    , githubToken :: GitHubTokenHolder
+    }
 
 -- types
-
-newtype ServerTcpPort = ServerTcpPort Int
-    deriving (Generic, Show)
-instance FromJSON ServerTcpPort
-instance IntGetter ServerTcpPort
-    where getInt (ServerTcpPort val) = val
-
-newtype MaxResponseSizeBytes = MaxResponseSizeBytes Int
-    deriving (Generic, Show)
-instance FromJSON MaxResponseSizeBytes
-instance IntGetter MaxResponseSizeBytes
-    where getInt (MaxResponseSizeBytes val) = val
-
-newtype UserAgent = UserAgent Text
-    deriving (Generic, Show)
-instance FromJSON UserAgent
-instance TextGetter UserAgent
-    where getText (UserAgent val) = val
-
-newtype GitHubAppId = GitHubAppId Text
-    deriving (Generic, Show)
-instance FromJSON GitHubAppId
-instance TextGetter GitHubAppId
-    where getText (GitHubAppId val) = val
-
-newtype GitHubAppInstallId = GitHubAppInstallId Text
-    deriving (Generic, Show)
-instance FromJSON GitHubAppInstallId
-instance TextGetter GitHubAppInstallId
-    where getText (GitHubAppInstallId val) = val
-
-newtype GitHubKeyPath = GitHubKeyPath Text
-    deriving (Generic, Show)
-instance FromJSON GitHubKeyPath
-instance TextGetter GitHubKeyPath
-    where getText (GitHubKeyPath val) = val
-
-newtype JWTDurationSecs = JWTDurationSecs Int
-    deriving (Generic, Show)
-instance FromJSON JWTDurationSecs
-instance IntGetter JWTDurationSecs
-    where getInt (JWTDurationSecs val) = val
 
 data GitHubToken = GitHubToken
     { token :: GitHubTokenBody
@@ -105,26 +59,32 @@ data GitHubToken = GitHubToken
 instance FromJSON GitHubToken
 instance ToJSON GitHubToken
 
+emptyGitHubToken :: GitHubToken
+emptyGitHubToken =
+    GitHubToken (GitHubTokenBody "") (GitHubTokenExpiry "1970-01-01T00:00:00Z")
+
 newtype GitHubTokenBody = GitHubTokenBody Text
     deriving (Generic, Show)
 instance FromJSON GitHubTokenBody
 instance ToJSON GitHubTokenBody
-instance TextGetter GitHubTokenBody
-    where getText (GitHubTokenBody val) = val
+instance TextGetter GitHubTokenBody where
+    getText (GitHubTokenBody val) = val
 
 newtype GitHubTokenExpiry = GitHubTokenExpiry Text
     deriving (Generic, Show)
 instance FromJSON GitHubTokenExpiry
 instance ToJSON GitHubTokenExpiry
+instance TimeGetter GitHubTokenExpiry where
+    getTime (GitHubTokenExpiry val) =
+        case TimeFormat.parseTimeM False TimeFormat.defaultTimeLocale "%Y-%m-%dT%H:%M:%SZ" (unpack val) :: Maybe UTCTime of
+            Just tm -> tm
+            Nothing -> error . unpack $
+                "Error parsing token, date: [" <> val <> "]"
+
+newtype GitHubTokenHolder = GitHubTokenHolder (MVar.MVar GitHubToken)
 
 newtype JSONWebToken = JSONWebToken ByteString
-    deriving (Show)
-instance TextGetter JSONWebToken
-    where getBS (JSONWebToken val) = val
-
-newtype GitHubUrlAuth = GitHubUrlAuth Text
-    deriving (Generic, Show)
-instance FromJSON GitHubUrlAuth
-instance TextGetter GitHubUrlAuth
-    where getText (GitHubUrlAuth val) = val
+    deriving Show
+instance TextGetter JSONWebToken where
+    getBS (JSONWebToken val) = val
 

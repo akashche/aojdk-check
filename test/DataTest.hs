@@ -1,5 +1,5 @@
 --
--- Copyright 2018, Red Hat Inc.
+-- Copyright 2019, Red Hat Inc.
 --
 -- Licensed under the Apache License, Version 2.0 (the "License");
 -- you may not use this file except in compliance with the License.
@@ -19,28 +19,28 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE Strict #-}
 
-module Main where
+module DataTest (dataTest) where
 
+import Test.HUnit
 import Prelude ()
 import VtUtils.Prelude
-import qualified Control.Concurrent.MVar as MVar
-import qualified System.Environment as Environment
 
 import Data
-import Config
-import Client
-import Server
 
-main :: IO ()
-main = do
-    args <- (fmap pack) <$> fromList <$> Environment.getArgs
-    if 1 /= length args then do
-        putStrLn $ "Error: Invalid arguments specified, args: [" <> textShow args <> "]"
-        putStrLn $ "Usage: [aojdk-check-exe <path/to/config.json>]"
-    else do
-        let cfpath = args ! 0
-        cf <- jsonDecodeFile cfpath :: IO Config
-        man <- clientCreateManager cf
-        th <- GitHubTokenHolder <$> MVar.newMVar emptyGitHubToken
-        putStrLn $ "Starting server ..."
-        serverRun $ AppState cf man th
+testTokenExpiry :: Test
+testTokenExpiry = TestLabel "testTokenExpiry" $ TestCase $ do
+    let te = GitHubTokenExpiry "2019-01-28T22:58:28Z"
+    let before = dateParseISO8601 "2019-01-28 22:58:27"
+    let after = dateParseISO8601 "2019-01-28 22:58:29"
+    assertBool "before" $ before < (getTime te)
+    assertBool "after" $ after  > (getTime te)
+    let ts = floor . utcTimeToPOSIXSeconds . getTime $ te :: Int64
+    let bs = floor . utcTimeToPOSIXSeconds $ before :: Int64
+    assertBool "posix before" $ bs < ts
+    assertBool "posix after" $ bs > (ts - 10)
+    return ()
+
+dataTest :: Test
+dataTest = TestLabel "DataTest" (TestList
+    [ testTokenExpiry
+    ])
