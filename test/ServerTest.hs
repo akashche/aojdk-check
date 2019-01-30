@@ -35,7 +35,7 @@ test404 :: AppState -> Test
 test404 app = TestLabel "test404" $ TestCase $ do
     Warp.withApplication (return server404Handler) $ \port ->  do
         let url = "http://127.0.0.1:" <> (textShow port) <> "/"
-        let req = ((parseRequest_ . unpack) url)
+        let req = (parseRequest_ . unpack $ url)
         withResponse req (manager app) $ \resp -> do
             json <- httpResponseBodyJSON url resp 1024 :: IO Value
             assertEqual "code" 404 $ (jsonGet json "code" :: Int)
@@ -48,7 +48,7 @@ testPing :: AppState -> Test
 testPing app = TestLabel "testPing" $ TestCase $ do
     Warp.withApplication (return $ serverPingHandler app) $ \port ->  do
         let url = "http://127.0.0.1:" <> (textShow port) <> "/"
-        let req = ((parseRequest_ . unpack) url)
+        let req = (parseRequest_ . unpack $ url)
         withResponse req (manager app) $ \resp -> do
             json <- httpResponseBodyJSON url resp 1024 :: IO Value
             assertEqual "code" 200 $ (jsonGet json "code" :: Int)
@@ -62,7 +62,7 @@ testWebHook app = TestLabel "testWebHook" $ TestCase $ do
     Warp.withApplication (return $ serverWebHookHandler app) $ \port ->  do
         let url = "http://127.0.0.1:" <> (textShow port) <> "/"
         -- get
-        let reqGet = ((parseRequest_ . unpack) url)
+        let reqGet = (parseRequest_ . unpack $ url)
                 { Client.method = "GET"
                 }
         stGet <- withResponse reqGet (manager app) $ \resp -> do
@@ -71,7 +71,7 @@ testWebHook app = TestLabel "testWebHook" $ TestCase $ do
         assertEqual "get" 404 $ stGet
         -- post
         wh <- readFile "test/data/webhook-issue-opened.json"
-        let reqPost = ((parseRequest_ . unpack) url)
+        let reqPost = (parseRequest_ . unpack $ url)
                 { Client.method = "POST"
                 , Client.requestBody = (Client.RequestBodyBS . encodeUtf8) wh
                 }

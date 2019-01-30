@@ -71,19 +71,19 @@ clientCreateManager cf =
             }
 
 clientGitHubAuth :: Manager -> ClientConfig -> GitHubConfig -> GitHubTokenHolder -> IO GitHubToken
-clientGitHubAuth man ccf gcf th = do
-    tok <- IORef.readIORef $ tokenRef th
-    now <- (floor . utcTimeToPOSIXSeconds) <$> getCurrentTime
-    let exp = floor . utcTimeToPOSIXSeconds . getTime . expires_at $ tok
-    let min = getInt . tokenMinRemainingSecs $ gcf
-    if exp - min > now then do
-        return tok
-    else
-        -- slow path
-        MVar.withMVar (lock th) $ \_ -> do
+clientGitHubAuth man ccf gcf th =
+    MVar.withMVar (lock th) $ \_ -> do
+        tok <- IORef.readIORef $ tokenRef th
+        now <- (floor . utcTimeToPOSIXSeconds) <$> getCurrentTime
+        let exp = floor . utcTimeToPOSIXSeconds . getTime . expires_at $ tok
+        let min = getInt . tokenMinRemainingSecs $ gcf
+        if exp - min > now then
+            return tok
+        else do
+            -- slow path
             jwt <- createJWT (keyPath gcf) (appId gcf) (jwtDurationSecs gcf)
             let url = textFormat (getText . urlAuth $ gcf) $ fromList [getText . appInstallId $ gcf]
-            let req = ((parseRequest_ . unpack) url)
+            let req = (parseRequest_ . unpack $ url)
                     { Client.method = "POST"
                     , Client.requestHeaders =
                         [ ("User-Agent", (getBS . userAgent $ ccf))
@@ -102,7 +102,7 @@ clientGitHubAuth man ccf gcf th = do
                         <> " status: [" <> (textShow st) <> "],"
                         <> " resp: [" <> tx <> "]"
                 httpResponseBodyJSON url resp mb :: IO GitHubToken
-            IORef.atomicWriteIORef (tokenRef th) ntok
+            IORef.writeIORef (tokenRef th) ntok
             return ntok
 
 clientFetchPatch :: Manager -> ClientConfig -> FetchURL -> IO Text
@@ -121,7 +121,7 @@ clientCreatePullRequest :: Manager -> ClientConfig -> GitHubConfig -> GitHubToke
 clientCreatePullRequest man ccf gcf tok bod = do
     let url = textFormat (getText . urlCreatePullRequest $ gcf) $
             fromList [(getText . accountName $ gcf), (getText . repoName $ gcf)]
-    let req = ((parseRequest_ . unpack) url)
+    let req = (parseRequest_ . unpack $ url)
             { Client.method = "POST"
             , Client.requestHeaders =
                 [ ("User-Agent", (getBS . userAgent $ ccf))
@@ -144,7 +144,7 @@ clientCreateCheck :: Manager -> ClientConfig -> GitHubConfig -> GitHubToken -> G
 clientCreateCheck man ccf gcf tok bod = do
     let url = textFormat (getText . urlCreateCheck $ gcf) $
             fromList [(getText . accountName $ gcf), (getText . repoName $ gcf)]
-    let req = ((parseRequest_ . unpack) url)
+    let req = (parseRequest_ . unpack $ url)
             { Client.method = "POST"
             , Client.requestHeaders =
                 [ ("User-Agent", (getBS . userAgent $ ccf))
