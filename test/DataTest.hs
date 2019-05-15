@@ -15,6 +15,7 @@
 
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE Strict #-}
@@ -30,8 +31,8 @@ import Data
 testTokenExpiry :: Test
 testTokenExpiry = TestLabel "testTokenExpiry" $ TestCase $ do
     let te = GitHubTokenExpiry "2019-01-28T22:58:28Z"
-    let before = dateParseISO8601 "2019-01-28 22:58:27"
-    let after = dateParseISO8601 "2019-01-28 22:58:29"
+    let Right before = dateParseISO8601 "2019-01-28 22:58:27"
+    let Right after = dateParseISO8601 "2019-01-28 22:58:29"
     assertBool "before" $ before < (getTime te)
     assertBool "after" $ after  > (getTime te)
     let ts = floor . utcTimeToPOSIXSeconds . getTime $ te :: Int64

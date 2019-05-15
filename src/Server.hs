@@ -15,6 +15,7 @@
 
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE Strict #-}
@@ -84,7 +85,7 @@ handlers = HashMap.fromList
 
 master :: AppState -> Application
 master app req respond = do
-    let reqpath = (decodeUtf8 . rawPathInfo) req
+    let reqpath = (textDecodeUtf8 . rawPathInfo) req
     case lookup reqpath handlers of
         Just ha -> do
             outcome <- try $ ha app req respond

@@ -15,6 +15,7 @@
 
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE Strict #-}
@@ -38,8 +39,8 @@ test404 app = TestLabel "test404" $ TestCase $ do
         let req = (parseRequest_ . unpack $ url)
         withResponse req (manager app) $ \resp -> do
             json <- httpResponseBodyJSON url resp 1024 :: IO Value
-            assertEqual "code" 404 $ (jsonGet json "code" :: Int)
-            assertEqual "message" "Not Found" $ (jsonGet json "message" :: Text)
+            assertEqual "code" 404 $ (fromRight' $ jsonGet json "code" :: Int)
+            assertEqual "message" "Not Found" $ (fromRight' $ jsonGet json "message" :: Text)
             let HTTPTypes.Status st _ = Client.responseStatus resp
             assertEqual "status" 404 $ st
     return ()
@@ -51,8 +52,8 @@ testPing app = TestLabel "testPing" $ TestCase $ do
         let req = (parseRequest_ . unpack $ url)
         withResponse req (manager app) $ \resp -> do
             json <- httpResponseBodyJSON url resp 1024 :: IO Value
-            assertEqual "code" 200 $ (jsonGet json "code" :: Int)
-            assertEqual "message" "pong" $ (jsonGet json "message" :: Text)
+            assertEqual "code" 200 $ (fromRight' $ jsonGet json "code" :: Int)
+            assertEqual "message" "pong" $ (fromRight' $ jsonGet json "message" :: Text)
             let HTTPTypes.Status st _ = Client.responseStatus resp
             assertEqual "status" 200 $ st
     return ()

@@ -15,6 +15,7 @@
 
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE Strict #-}
@@ -172,7 +173,7 @@ checkErr name fun = do
             let csptr = castPtr eptr
             cs <- peek csptr
             bs <- packCString cs
-            return (decodeUtf8 bs)
+            return (textDecodeUtf8 bs)
         else
             return ""
         error . unpack  $

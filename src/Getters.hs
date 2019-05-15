@@ -15,6 +15,7 @@
 
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE Strict #-}
@@ -30,7 +31,7 @@ import VtUtils.Prelude
 
 class TextGetter a where
     getText :: a -> Text
-    getText = decodeUtf8 . getBS
+    getText = textDecodeUtf8 . getBS
     getBS :: a -> ByteString
     getBS = encodeUtf8 . getText
     getString :: a -> String

@@ -15,6 +15,7 @@
 
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE Strict #-}
@@ -32,7 +33,7 @@ testSign :: Test
 testSign = TestLabel "testSign" $ TestCase $ do
     bs <- digestSignRS256 "test/data/test.private-key.pem" "foo2"
     assertEqual "sign" "AijZaMANraPlr5cetcl8pzpoK6wuWJ2pgOdThrEtl9T5AdlXsJRMx2XMIKDLhOftq4pndc4N6VQTonX6J6zEg8XnvIZkuQB_mUo7zCS9C_fOSzpK5Ay5IFCltbsg72GTQvr7Eg3lZRSMqaOfKNzkVBl2WvcUQwiVsWbrQ6uX9cAOXvioh5URu35ER4jYtX8oqtxutvE4U9_rbWTvC1PkHQAySqkRX3HUtqiS9nxIqtGUHTm7tDZ48OcHg-io01D1e9bP9oFCO5zeEaJgCoHcFkOVDx9cLHCnZL2cDf-uiWADxGcrl5Dz4hPjqtJmg79NUf6ngv2RfDDDwhsiqP4WRg==" $
-        (decodeUtf8 . Base64URL.encode) bs
+        (textDecodeUtf8 . Base64URL.encode) bs
     return ()
 
 digestTest :: Test

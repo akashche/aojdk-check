@@ -15,6 +15,7 @@
 
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE Strict #-}
@@ -47,8 +48,9 @@ pathOnly = do
 
 oneLine :: Parser Path
 oneLine = do
-    minus <- parsecParseText pathOnly <$> parsecLinePrefix "---"
-    plus <- parsecParseText pathOnly <$> parsecLinePrefix "+++"
+    -- unlikely to fail
+    minus <- fromRight' <$> parsecParseText pathOnly <$> parsecLinePrefix "---"
+    plus <- fromRight' <$> parsecParseText pathOnly <$> parsecLinePrefix "+++"
     if "/dev/null" == minus then
         return (Added plus)
     else if "/dev/null" == plus then

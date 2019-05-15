@@ -19,7 +19,7 @@ packages:
 - .
 
 extra-deps:
-- vt-utils-1.2.0.0
+- vt-utils-1.3.0.0
 #- github: akashche/vt-utils
 #  commit: master
 # - /home/alex/projects/haskell/vt-utils/
