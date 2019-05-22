@@ -32,7 +32,7 @@ import qualified Network.HTTP.Types as HTTPTypes
 import qualified Network.Wai.Handler.Warp as Warp
 
 import Client
-import Config
+--import Config
 import Data
 import Server
 
@@ -78,56 +78,46 @@ creationHandler req respond =
             encodePretty $ RespMsg "Invalid method" 400 (httpRequestPath req)
 
 testAuth :: AppState -> Test
-testAuth app = TestLabel "testAuth" $ TestCase $ do
+testAuth tapp = TestLabel "testAuth" $ TestCase $ do
     counter <- IORef.newIORef (0 :: Int)
     Warp.withApplication (return $ authHandler counter) $ \port ->  do
-        let gcf = (github . config $ app)
-                { urlAuth = GitHubUrlAuth $
-                    textFormat (getText . urlAuth . github . config $ app) $
-                        fromList [(textShow port), "{}"]
-                }
-        tok1 <- clientGitHubAuth (manager app) (client . config $ app) gcf (githubToken app)
-        tok2 <- clientGitHubAuth (manager app) (client . config $ app) gcf (githubToken app)
-        assertEqual "same token" ((getText . token) tok1) ((getText . token) tok2)
+        let app = appStateCustomizePort tapp port
+        GitHubToken {token=tok1} <- clientGitHubAuth app
+        let GitHubTokenBody tb1 = tok1
+        GitHubToken {token=tok2} <- clientGitHubAuth app
+        let GitHubTokenBody tb2 = tok2
+        assertEqual "same token" tb1 tb2
 
 testFetch :: AppState -> Test
 testFetch app = TestLabel "testFetch" $ TestCase $ do
     Warp.withApplication (return $ fetchHandler) $ \port ->  do
         let url = "http://127.0.0.1:" <> (textShow port) <> "/"
-        res <- clientFetchPatch (manager app) (client . config $ app) (FetchURL url)
+        res <- clientFetchPatch app (FetchURL url)
         assertEqual "fetch" "foo" $ res
 
 testCreatePR :: AppState -> Test
-testCreatePR app = TestLabel "testCreatePR" $ TestCase $ do
+testCreatePR tapp = TestLabel "testCreatePR" $ TestCase $ do
     Warp.withApplication (return $ creationHandler) $ \port ->  do
-        let gcf = (github . config $ app)
-                { urlCreatePullRequest = GitHubUrlCreatePullRequest $
-                    textFormat (getText . urlCreatePullRequest . github . config $ app) $
-                        fromList [(textShow port), "{}", "{}"]
-                }
+        let app = appStateCustomizePort tapp port
         let pl = GitHubRequestPR
                 { title = "test title"
                 , head = "test-branch-1"
                 , base = "test-branch-2"
                 , body = "test body"
                 }
-        clientCreatePullRequest (manager app) (client . config $ app) gcf emptyGitHubToken pl
+        clientCreatePullRequest app pl
 
 testCreateCheck :: AppState -> Test
-testCreateCheck app = TestLabel "testCreateCheck" $ TestCase $ do
+testCreateCheck tapp = TestLabel "testCreateCheck" $ TestCase $ do
     Warp.withApplication (return $ creationHandler) $ \port ->  do
-        let gcf = (github . config $ app)
-                { urlCreateCheck = GitHubUrlCreateCheck $
-                    textFormat (getText . urlCreateCheck . github . config $ app) $
-                        fromList [(textShow port), "{}", "{}"]
-                }
+        let app = appStateCustomizePort tapp port
         let pl = GitHubRequestCheck
                 { name = "test check"
                 , head_sha = "da39a3ee5e6b4b0d3255bfef95601890afd80709"
                 , details_url = "https://github.com/akashche"
                 , external_id = "42"
                 }
-        clientCreateCheck (manager app) (client . config $ app) gcf emptyGitHubToken pl
+        clientCreateCheck app pl
 
 clientTest :: AppState -> Test
 clientTest app = TestLabel "ClientTest" $ TestList

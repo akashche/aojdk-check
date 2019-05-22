@@ -19,6 +19,7 @@
         "keyPath": "test/data/test.private-key.pem",
         "jwtDurationSecs": 600,
         "tokenMinRemainingSecs": 600,
+        "customPort": "SUBSTITUTED_BY_TEST",
         "urlAuth": "http://127.0.0.1:{}/{}",
         "urlCreatePullRequest": "http://127.0.0.1:{}/{}/{}",
         "urlCreateCheck": "http://127.0.0.1:{}/{}/{}"

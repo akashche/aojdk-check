@@ -22,6 +22,7 @@
 
 module Data
     ( AppState(..)
+    , appStateCustomizePort
     , GitHubTokenHolder(..)
     , createGitHubTokenHolder
     -- types
@@ -55,6 +56,20 @@ data AppState = AppState
     , manager :: Manager
     , githubToken :: GitHubTokenHolder
     }
+
+appStateCustomizePort :: AppState -> Int -> AppState
+appStateCustomizePort app port =
+    let
+        AppState {config} = app
+        Config {github} = config
+    in
+        app
+            { config = config
+                { github = github
+                    { customPort = GitHubCustomPort $ textShow port
+                    }
+                }
+            }
 
 -- types
 
@@ -105,9 +120,8 @@ instance TextGetter JSONWebToken where
 
 newtype FetchURL = FetchURL Text
     deriving Show
-instance TextGetter FetchURL where
-    getText (FetchURL val) = val
 
+-- fields are not used separately
 data GitHubRequestPR = GitHubRequestPR
     { title :: Text
     , head ::  Text
