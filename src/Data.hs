@@ -30,14 +30,11 @@ module Data
     , emptyGitHubToken
     , GitHubTokenBody(..)
     , GitHubTokenExpiry(..)
+    , githubTokenExpiryTime
     , JSONWebToken(..)
     , FetchURL(..)
     , GitHubRequestPR(..)
     , GitHubRequestCheck(..)
-    -- getters re-export
-    , TextGetter(..)
-    , IntGetter(..)
-    , TimeGetter(..)
     ) where
 
 import Prelude ()
@@ -47,7 +44,6 @@ import qualified Control.Concurrent.MVar as MVar
 import qualified Data.Time.Format as TimeFormat
 
 import Config
-import Getters
 
 -- app state
 
@@ -88,15 +84,14 @@ newtype GitHubTokenBody = GitHubTokenBody Text
     deriving (Generic, Show)
 instance FromJSON GitHubTokenBody
 instance ToJSON GitHubTokenBody
-instance TextGetter GitHubTokenBody where
-    getText (GitHubTokenBody val) = val
 
 newtype GitHubTokenExpiry = GitHubTokenExpiry Text
     deriving (Generic, Show)
 instance FromJSON GitHubTokenExpiry
 instance ToJSON GitHubTokenExpiry
-instance TimeGetter GitHubTokenExpiry where
-    getTime (GitHubTokenExpiry val) =
+
+githubTokenExpiryTime :: GitHubTokenExpiry -> UTCTime
+githubTokenExpiryTime (GitHubTokenExpiry val) =
         case TimeFormat.parseTimeM False TimeFormat.defaultTimeLocale "%Y-%m-%dT%H:%M:%SZ" (unpack val) :: Maybe UTCTime of
             Just tm -> tm
             Nothing -> error . unpack $
@@ -115,8 +110,6 @@ createGitHubTokenHolder = do
 
 newtype JSONWebToken = JSONWebToken ByteString
     deriving Show
-instance TextGetter JSONWebToken where
-    getBS (JSONWebToken val) = val
 
 newtype FetchURL = FetchURL Text
     deriving Show

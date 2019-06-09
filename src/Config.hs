@@ -50,8 +50,6 @@ module Config
 import Prelude ()
 import VtUtils.Prelude
 
-import Getters
-
 data Config = Config
     { server :: ServerConfig
     , client :: ClientConfig
@@ -69,8 +67,6 @@ instance FromJSON ServerConfig
 newtype ServerTcpPort = ServerTcpPort Int
     deriving (Generic, Show)
 instance FromJSON ServerTcpPort
-instance IntGetter ServerTcpPort where
-    getInt (ServerTcpPort val) = val
 
 -- client
 
@@ -86,32 +82,22 @@ instance FromJSON ClientConfig
 newtype ClientUserAgent = ClientUserAgent Text
     deriving (Generic, Show)
 instance FromJSON ClientUserAgent
-instance TextGetter ClientUserAgent where
-    getText (ClientUserAgent val) = val
 
 newtype ClientMaxResponseSizeBytes = ClientMaxResponseSizeBytes Int
     deriving (Generic, Show)
 instance FromJSON ClientMaxResponseSizeBytes
-instance IntGetter ClientMaxResponseSizeBytes where
-    getInt (ClientMaxResponseSizeBytes val) = val
 
 newtype ClientMaxCachedConnectionsPerHost = ClientMaxCachedConnectionsPerHost Int
     deriving (Generic, Show)
 instance FromJSON ClientMaxCachedConnectionsPerHost
-instance IntGetter ClientMaxCachedConnectionsPerHost where
-    getInt (ClientMaxCachedConnectionsPerHost val) = val
 
 newtype ClientMaxIdleConnections = ClientMaxIdleConnections Int
     deriving (Generic, Show)
 instance FromJSON ClientMaxIdleConnections
-instance IntGetter ClientMaxIdleConnections where
-    getInt (ClientMaxIdleConnections val) = val
 
 newtype ClientMaxResponseTimeout = ClientMaxResponseTimeout Int
     deriving (Generic, Show)
 instance FromJSON ClientMaxResponseTimeout
-instance IntGetter ClientMaxResponseTimeout where
-    getInt (ClientMaxResponseTimeout val) = val
 
 -- github
 
@@ -149,8 +135,6 @@ instance FromJSON GitHubRepoName
 newtype GitHubKeyPath = GitHubKeyPath Text
     deriving (Generic, Show)
 instance FromJSON GitHubKeyPath
-instance TextGetter GitHubKeyPath where
-    getText (GitHubKeyPath val) = val
 
 newtype GitHubJWTDurationSecs = GitHubJWTDurationSecs Int
     deriving (Generic, Show)

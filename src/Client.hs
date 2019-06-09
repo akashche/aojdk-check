@@ -100,7 +100,7 @@ clientGitHubAuth app = do
     where
         tokenNotExpired GitHubToken {expires_at} (GitHubTokenMinRemainingSecs min) = do
             now <- (floor . utcTimeToPOSIXSeconds) <$> getCurrentTime
-            let exp = floor . utcTimeToPOSIXSeconds . getTime $ expires_at
+            let exp = floor . utcTimeToPOSIXSeconds . githubTokenExpiryTime $ expires_at
             return $ exp - min > now
 
         createJWT (GitHubKeyPath key) (GitHubAppId iss) (GitHubJWTDurationSecs dur) = do
