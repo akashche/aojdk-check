@@ -21,7 +21,11 @@
 {-# LANGUAGE Strict #-}
 
 module Hg
-    ( hgImportPatch
+    ( HgRepository(..)
+    , HgExecutable(..)
+    , HgOutputPath(..)
+    , HgImportPatchException(..)
+    , hgImportPatch
     ) where
 
 import Prelude ()
@@ -29,10 +33,36 @@ import VtUtils.Prelude
 import qualified Data.Text as Text
 import qualified System.Directory as Directory
 
+newtype HgRepository = HgRepository Text
+    deriving Show
+
+newtype HgExecutable = HgExecutable Text
+    deriving Show
+
+-- todo: newtype HgPatch
+
+newtype HgOutputPath = HgOutputPath Text
+    deriving Show
+
+data HgImportPatchException = HgImportPatchException
+    { executable :: HgExecutable
+    , repository :: HgRepository
+    , outputCode :: Int
+    , outputText :: Text
+    }
+instance Exception HgImportPatchException
+instance Show HgImportPatchException where
+    show e@(HgImportPatchException {executable, repository, outputCode, outputText}) = errorShow e $
+               "Mercurial error,"
+            <> " executable: [" <> (textShow executable) <> "],"
+            <> " repository: [" <> (textShow repository) <> "],"
+            <> " code: [" <> (textShow outputCode) <> "],"
+            <> " message: [" <> (Text.take 1024 (Text.strip outputText)) <> "]"
+
 -- https://stackoverflow.com/q/17247538/314015
 
-hgImportPatch :: Text -> Text -> Text -> Text -> IO ()
-hgImportPatch exec repo patch out = do
+hgImportPatch :: HgExecutable -> HgRepository -> Text -> HgOutputPath -> IO ()
+hgImportPatch exec'@(HgExecutable exec) repo'@(HgRepository repo) patch (HgOutputPath out) = do
     let args = fromList ["--repository", repo, "import", "--no-commit", patch]
     code <- processSpawnAndWait exec args out
     when (0 /= code) $ do
@@ -41,6 +71,4 @@ hgImportPatch exec repo patch out = do
             readFile (unpack out)
         else
             return ""
-        (error . unpack) $ "Mercurial error,"
-            <> " code: [" <> (textShow code) <>"],"
-            <> " output: [" <> (Text.take 1024 (Text.strip output)) <> "]"
+        throwIO $ HgImportPatchException exec' repo' code output

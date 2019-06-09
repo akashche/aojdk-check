@@ -21,11 +21,13 @@
 {-# LANGUAGE Strict #-}
 
 module Digest
-    ( digestSignRS256
+    ( DigestFFIException(..)
+    , digestSignRS256
     ) where
 
 import Prelude ()
 import VtUtils.Prelude
+import qualified Data.Text as Text
 import qualified Data.Vector.Storable.Mutable as Mutable
 
 foreign import ccall "EVP_MD_CTX_create" c'EVP_MD_CTX_create
@@ -68,14 +70,23 @@ foreign import ccall "EVP_DigestSignFinal" c'EVP_DigestSignFinal
     :: Ptr () -> Ptr Word8 -> Ptr() -> IO CInt
 
 
+data DigestFFIException = DigestFFIException
+    { callName :: Text
+    , errorContext :: Text
+    }
+instance Exception DigestFFIException
+instance Show DigestFFIException where
+    show e@(DigestFFIException {callName, errorContext}) = errorShow e $
+              "FFI call error,"
+            <> " call: [" <> callName <> "],"
+            <> " context: [" <> (Text.take 1024 errorContext) <> "]"
+
 withEVP_MD_CTX :: (Ptr () -> IO a) -> IO a
 withEVP_MD_CTX fun =
     bracket
         ( do
             ctx <- c'EVP_MD_CTX_create
-            when (nullPtr == ctx) $ error .unpack $
-                   "FFI call error,"
-                <> " call: [EVP_MD_CTX_create]"
+            when (nullPtr == ctx) $ throwIO $ DigestFFIException "EVP_MD_CTX_create" ""
             return ctx )
         (\ctx -> c'EVP_MD_CTX_destroy ctx)
         fun
@@ -86,9 +97,7 @@ withBIO_s_file fun =
         ( do
             tp <- c'BIO_s_file
             bio <- c'BIO_new tp
-            when (nullPtr == bio) $ error . unpack $
-                   "FFI call error,"
-                <> " call: [BIO_new]"
+            when (nullPtr == bio) $ throwIO $ DigestFFIException "BIO_new" ""
             return bio )
         (\bio -> c'BIO_free_all bio)
         fun
@@ -98,10 +107,7 @@ withPrivateKey label bio fun =
     bracket
         ( do
             key <- c'PEM_read_bio_PrivateKey bio nullPtr nullPtr nullPtr
-            when (nullPtr == key) $ error . unpack $
-                   "FFI call error,"
-                <> " call: [PEM_read_bio_PrivateKey],"
-                <> " path: [" <> label <> "]"
+            when (nullPtr == key) $ throwIO $ DigestFFIException "PEM_read_bio_PrivateKey" label
             return key )
         (\key -> c'EVP_PKEY_free key)
         fun
@@ -110,33 +116,22 @@ getDigestByName :: Text -> IO (Ptr ())
 getDigestByName name = do
     ffiWithUTF8 name $ \cs -> do
         md <- c'EVP_get_digestbyname cs
-        when (nullPtr == md) $ error .unpack $
-               "FFI call error,"
-            <> " call: [EVP_get_digestbyname],"
-            <> " name: [" <> name <> "]"
+        when (nullPtr == md) $ throwIO $ DigestFFIException "EVP_get_digestbyname" name
         return md
 
 initDigestCtx :: Ptr () -> Text -> Text -> IO ()
 initDigestCtx ctx hash key = do
     md <- getDigestByName hash
     errInit <- c'EVP_DigestInit_ex ctx md nullPtr
-    when (1 /= errInit) $ error . unpack $
-               "FFI call error,"
-            <> " call: [EVP_DigestInit_ex]"
+    when (1 /= errInit) $ throwIO $ DigestFFIException "EVP_DigestInit_ex" (textShow errInit)
     withBIO_s_file $ \bio -> do
         ffiWithUTF8 key $ \nm -> do
             -- BIO_read_filename
             errRead <- c'BIO_ctrl bio 108 (0x01 .|. 0x02) nm
-            when (1 /= errRead) $ error . unpack $
-                   "FFI call error,"
-                <> " call: [BIO_read_filename],"
-                <> " path: [" <> key <> "]"
+            when (1 /= errRead) $ throwIO $ DigestFFIException "BIO_read_filename" key
             withPrivateKey key bio $ \pkey -> do
                 errInit2 <- c'EVP_DigestSignInit ctx nullPtr md nullPtr pkey
-                when (1 /= errInit2) $ error . unpack $
-                       "FFI call error,"
-                    <> " call: [EVP_DigestSignInit],"
-                    <> " path: [" <> key <> "]"
+                when (1 /= errInit2) $ throwIO $ DigestFFIException "EVP_DigestSignInit" key
 
 digestSignRS256 :: Text -> ByteString -> IO ByteString
 digestSignRS256 key text =
@@ -146,16 +141,11 @@ digestSignRS256 key text =
         -- update digest
         useAsCStringLen text $ \(dt, dlen) -> do
             err <- c'EVP_DigestUpdate ctx dt (fromIntegral dlen)
-            when (1 /= err) $ error . unpack $
-                   "FFI call error,"
-                <> " call: [EVP_DigestUpdate],"
-                <> " data len: [" <> (textShow dlen) <> "]"
+            when (1 /= err) $ throwIO $ DigestFFIException "EVP_DigestUpdate" (textShow dlen)
         -- finalize digest
         len <- ffiWithPtr (0 :: CSize) $ \req -> do
             err <- c'EVP_DigestSignFinal ctx nullPtr (castPtr req)
-            when (1 /= err) $ error . unpack $
-                   "FFI call error,"
-                <> " call: [EVP_DigestSignFinal]"
+            when (1 /= err) $ throwIO $ DigestFFIException "EVP_DigestSignFinal" (textShow err)
             len <- peek req
             return len
         -- read signature
@@ -163,9 +153,6 @@ digestSignRS256 key text =
         Mutable.unsafeWith vec $ \buf -> do
             ffiWithPtr len $ \lptr -> do
                 err <- c'EVP_DigestSignFinal ctx buf (castPtr lptr)
-                when (1 /= err) $ error . unpack $
-                       "FFI call error,"
-                    <> " call: [EVP_DigestSignFinal],"
-                    <> " len: [" <> (textShow len) <> "]"
+                when (1 /= err) $ throwIO $ DigestFFIException "EVP_DigestSignFinal" (textShow len)
                 bs <- packCStringLen ((castPtr buf), (fromIntegral len))
                 return bs

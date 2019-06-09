@@ -33,9 +33,9 @@ testTokenExpiry = TestLabel "testTokenExpiry" $ TestCase $ do
     let te = GitHubTokenExpiry "2019-01-28T22:58:28Z"
     let Right before = dateParseISO8601 "2019-01-28 22:58:27"
     let Right after = dateParseISO8601 "2019-01-28 22:58:29"
-    assertBool "before" $ before < (githubTokenExpiryTime te)
-    assertBool "after" $ after  > (githubTokenExpiryTime te)
-    let ts = floor . utcTimeToPOSIXSeconds . githubTokenExpiryTime $ te :: Int64
+    assertBool "before" $ before < (fromJust $ githubTokenExpiryTime te)
+    assertBool "after" $ after  > (fromJust $ githubTokenExpiryTime te)
+    let ts = floor . utcTimeToPOSIXSeconds . fromJust . githubTokenExpiryTime $ te :: Int64
     let bs = floor . utcTimeToPOSIXSeconds $ before :: Int64
     assertBool "posix before" $ bs < ts
     assertBool "posix after" $ bs > (ts - 10)

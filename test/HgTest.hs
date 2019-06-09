@@ -38,7 +38,9 @@ testImportPatch = TestLabel "testImportPatch" $ TestCase $ do
     Process.callProcess "/usr/bin/hg" ["--cwd", "work/hgrepo", "add", "foo.txt"]
     Process.callProcess "/usr/bin/hg" ["--repository", "work/hgrepo", "commit", "-m", "test"]
     Process.callProcess "/usr/bin/hg" ["--repository", "work/hgrepo", "status"]
-    hgImportPatch "/usr/bin/hg" "work/hgrepo" "test/data/hg.diff" "work/out.txt"
+
+    hgImportPatch (HgExecutable "/usr/bin/hg") (HgRepository "work/hgrepo") "test/data/hg.diff" (HgOutputPath "work/out.txt")
+
     Process.callProcess "/usr/bin/hg" ["--repository", "work/hgrepo", "status"]
     return ()
 

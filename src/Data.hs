@@ -90,12 +90,9 @@ newtype GitHubTokenExpiry = GitHubTokenExpiry Text
 instance FromJSON GitHubTokenExpiry
 instance ToJSON GitHubTokenExpiry
 
-githubTokenExpiryTime :: GitHubTokenExpiry -> UTCTime
+githubTokenExpiryTime :: GitHubTokenExpiry -> Maybe UTCTime
 githubTokenExpiryTime (GitHubTokenExpiry val) =
-        case TimeFormat.parseTimeM False TimeFormat.defaultTimeLocale "%Y-%m-%dT%H:%M:%SZ" (unpack val) :: Maybe UTCTime of
-            Just tm -> tm
-            Nothing -> error . unpack $
-                "Error parsing token, date: [" <> val <> "]"
+        TimeFormat.parseTimeM False TimeFormat.defaultTimeLocale "%Y-%m-%dT%H:%M:%SZ" (unpack val)
 
 data GitHubTokenHolder = GitHubTokenHolder
     { tokenRef :: IORef.IORef GitHubToken

@@ -22,6 +22,7 @@
 
 module Git
     ( GitRepo
+    , GitFFICallException(..)
     , gitWithRepo
     , gitCreateBranch
     , gitCommitBranch
@@ -56,16 +57,30 @@ _suppress = do
 
 -- non-opaque structs
 
+data GitFFIOidPeekNotSupportedException = GitFFIOidPeekNotSupportedException
+instance Exception GitFFIOidPeekNotSupportedException
+instance Show GitFFIOidPeekNotSupportedException where
+    show e = errorShow e $
+              "Peek operation not supported"
+
+data GitFFIOidInvalidLengthException = GitFFIOidInvalidLengthException
+    { oidLength :: Int
+    }
+instance Exception GitFFIOidInvalidLengthException
+instance Show GitFFIOidInvalidLengthException where
+    show e@(GitFFIOidInvalidLengthException {oidLength}) = errorShow e $
+               "Invalid OID specified,"
+            <> " length: [" <> (textShow oidLength) <> "]"
+
 -- https://libgit2.org/libgit2/#v0.24.1/type/git_oid
 data C'git_oid = C'git_oid (VectorStorable.Vector CUChar)
 instance Storable C'git_oid where
     sizeOf ~_ = 20
     alignment ~_ = 1
-    peek _ = error "Not Supported"
+    peek _ = throwIO $ GitFFIOidPeekNotSupportedException
     poke ptr (C'git_oid vec) = do
         let len = VectorStorable.length vec
-        when (20 /= len) $ error . unpack $
-            "Invalid OID, length: [" <> (textShow len) <> "]"
+        when (20 /= len) $ throwIO $ GitFFIOidInvalidLengthException len
         VectorStorable.unsafeWith vec $ \buf -> do
             let dest = castPtr ptr
             copyBytes dest buf 20
@@ -75,7 +90,7 @@ data C'git_strarray = C'git_strarray (Ptr CString) CSize
 instance Storable C'git_strarray where
     sizeOf ~_ = sizeOf (undefined :: Ptr CString) + sizeOf (undefined :: CSize)
     alignment ~_ = sizeOf (undefined :: Word) -- todo: checkme on 32-bit
-    peek _ = error "Not Supported"
+    peek _ = throwIO $ GitFFIOidPeekNotSupportedException
     poke p (C'git_strarray v0 v1) = do
         pokeByteOff p 0 v0
         let off = sizeOf (undefined :: Ptr CString)
@@ -164,6 +179,19 @@ foreign import ccall "git_remote_push" c'git_remote_push
 
 -- internal functions
 
+data GitFFICallException = GitFFICallException
+    { callName :: Text
+    , errorCode :: CInt
+    , errorMessage :: Text
+    }
+instance Exception GitFFICallException
+instance Show GitFFICallException where
+    show e@(GitFFICallException {callName, errorCode, errorMessage}) = errorShow e $
+              "FFI call error,"
+            <> " call: [" <> callName <> "],"
+            <> " code: [" <> (textShow errorCode) <> "],"
+            <> " message: [" <> errorMessage <> "]"
+
 checkErr :: Text -> IO CInt -> IO ()
 checkErr name fun = do
     err <- fun
@@ -176,11 +204,7 @@ checkErr name fun = do
             return (textDecodeUtf8 bs)
         else
             return ""
-        error . unpack  $
-              "FFI call error,"
-            <> " call: [" <> name <> "],"
-            <> " code: [" <> (textShow err) <> "],"
-            <> " message: [" <> msg <> "]"
+        throwIO $ GitFFICallException name err msg
 
 withOid :: (Ptr C'git_oid -> IO a) -> IO a
 withOid fun = do

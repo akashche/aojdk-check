@@ -22,12 +22,13 @@
 
 module Client
     ( clientCreateManager
-    , ClientGitHubAuthException
+    , ClientGitHubAuthException(..)
+    , ClientGitHubAuthInvalidTokenException(..)
     , clientGitHubAuth
     , clientFetchPatch
-    , ClientCreatePullRequestException
+    , ClientCreatePullRequestException(..)
     , clientCreatePullRequest
-    , ClientCreateCheckException
+    , ClientCreateCheckException(..)
     , clientCreateCheck
     ) where
 
@@ -78,6 +79,15 @@ instance Show ClientGitHubAuthException where
             <> " status: [" <> (textShow status) <> "],"
             <> " resp: [" <> (Text.take 1024 response) <> "]"
 
+data ClientGitHubAuthInvalidTokenException = ClientGitHubAuthInvalidTokenException
+    { token :: GitHubToken
+    }
+instance Exception ClientGitHubAuthInvalidTokenException
+instance Show ClientGitHubAuthInvalidTokenException where
+    show e@(ClientGitHubAuthInvalidTokenException {token}) = errorShow e $
+               "Invalid GitHub token specfied,"
+            <> " token: [" <> (textShow token) <> "]"
+
 clientGitHubAuth :: AppState -> IO GitHubToken
 clientGitHubAuth app = do
     let AppState {config, manager, githubToken} = app
@@ -98,10 +108,13 @@ clientGitHubAuth app = do
             IORef.writeIORef tokenRef ntok
             return ntok
     where
-        tokenNotExpired GitHubToken {expires_at} (GitHubTokenMinRemainingSecs min) = do
+        tokenNotExpired ghtok@(GitHubToken {expires_at}) (GitHubTokenMinRemainingSecs min) = do
             now <- (floor . utcTimeToPOSIXSeconds) <$> getCurrentTime
-            let exp = floor . utcTimeToPOSIXSeconds . githubTokenExpiryTime $ expires_at
-            return $ exp - min > now
+            case githubTokenExpiryTime expires_at of
+                Just exptm -> do
+                    let exp = floor . utcTimeToPOSIXSeconds $ exptm
+                    return $ exp - min > now
+                Nothing -> throwIO $ ClientGitHubAuthInvalidTokenException ghtok
 
         createJWT (GitHubKeyPath key) (GitHubAppId iss) (GitHubJWTDurationSecs dur) = do
             now <- (floor . utcTimeToPOSIXSeconds) <$> getCurrentTime
