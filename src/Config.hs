@@ -25,6 +25,7 @@ module Config
     -- server
     , ServerConfig(..)
     , ServerTcpPort(..)
+    , ServerWebHookActionsEnabled(..)
     -- client
     , ClientConfig(..)
     , ClientUserAgent(..)
@@ -45,6 +46,7 @@ module Config
     , GitHubUrlAuth(..)
     , GitHubUrlCreatePullRequest(..)
     , GitHubUrlCreateCheck(..)
+    , GitHubUrlAddComment(..)
     ) where
 
 import Prelude ()
@@ -61,12 +63,17 @@ instance FromJSON Config
 
 data ServerConfig = ServerConfig
     { tcpPort :: ServerTcpPort
+    , webHookActionsEnabled :: ServerWebHookActionsEnabled
     } deriving (Generic, Show)
 instance FromJSON ServerConfig
 
 newtype ServerTcpPort = ServerTcpPort Int
     deriving (Generic, Show)
 instance FromJSON ServerTcpPort
+
+newtype ServerWebHookActionsEnabled = ServerWebHookActionsEnabled Bool
+    deriving (Generic, Show)
+instance FromJSON ServerWebHookActionsEnabled
 
 -- client
 
@@ -113,6 +120,7 @@ data GitHubConfig = GitHubConfig
     , urlAuth :: GitHubUrlAuth
     , urlCreatePullRequest :: GitHubUrlCreatePullRequest
     , urlCreateCheck :: GitHubUrlCreateCheck
+    , urlAddComment :: GitHubUrlAddComment
     } deriving (Generic, Show)
 instance FromJSON GitHubConfig
 
@@ -159,3 +167,7 @@ instance FromJSON GitHubUrlCreatePullRequest
 newtype GitHubUrlCreateCheck = GitHubUrlCreateCheck Text
     deriving (Generic, Show)
 instance FromJSON GitHubUrlCreateCheck
+
+newtype GitHubUrlAddComment = GitHubUrlAddComment Text
+    deriving (Generic, Show)
+instance FromJSON GitHubUrlAddComment

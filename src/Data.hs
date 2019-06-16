@@ -33,8 +33,11 @@ module Data
     , githubTokenExpiryTime
     , JSONWebToken(..)
     , FetchURL(..)
+    , GitHubURL(..)
     , GitHubRequestPR(..)
     , GitHubRequestCheck(..)
+    , GitHubIssueNumber(..)
+    , GitHubIssueComment(..)
     ) where
 
 import Prelude ()
@@ -111,15 +114,19 @@ newtype JSONWebToken = JSONWebToken ByteString
 newtype FetchURL = FetchURL Text
     deriving Show
 
+newtype GitHubURL = GitHubURL Text
+    deriving Show
+
 -- fields are not used separately
 data GitHubRequestPR = GitHubRequestPR
     { title :: Text
-    , head ::  Text
+    , head :: Text
     , base :: Text
     , body :: Text
     } deriving (Generic, Show)
 instance ToJSON GitHubRequestPR
 
+-- fields are not used separately
 data GitHubRequestCheck = GitHubRequestCheck
     { name :: Text
     , head_sha :: Text
@@ -127,3 +134,9 @@ data GitHubRequestCheck = GitHubRequestCheck
     , external_id :: Text
     } deriving (Generic, Show)
 instance ToJSON GitHubRequestCheck
+
+newtype GitHubIssueNumber = GitHubIssueNumber Int
+    deriving Show
+
+newtype GitHubIssueComment = GitHubIssueComment Text
+    deriving Show

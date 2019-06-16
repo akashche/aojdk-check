@@ -30,6 +30,8 @@ module Client
     , clientCreatePullRequest
     , ClientCreateCheckException(..)
     , clientCreateCheck
+    , ClientAddCommentException(..)
+    , clientAddComment
     ) where
 
 import Prelude ()
@@ -103,7 +105,8 @@ clientGitHubAuth app = do
             return tok
         else do -- slow path
             jwt <- createJWT keyPath appId jwtDurationSecs
-            let req = createReq jwt urlAuth appInstallId customPort userAgent
+            let url = createUrl urlAuth customPort appInstallId
+            let req = createReq url jwt userAgent
             ntok <- sendReq manager req maxResponseSizeBytes
             IORef.writeIORef tokenRef ntok
             return ntok
@@ -132,9 +135,9 @@ clientGitHubAuth app = do
             sign <- Base64URL.encode <$> digestSignRS256 key bs
             return $ JSONWebToken $ ByteString.concat [bs, ".", sign]
 
-        createReq (JSONWebToken jwt) (GitHubUrlAuth aurl) (GitHubAppInstallId iid)
-                (GitHubCustomPort port) (ClientUserAgent ua) =
-            let url = textFormat aurl $ fromList [port, iid] in
+        createUrl (GitHubUrlAuth aurl) (GitHubCustomPort port) (GitHubAppInstallId iid) =
+            GitHubURL $ textFormat aurl $ fromList [port, iid]
+        createReq (GitHubURL url) (JSONWebToken jwt) (ClientUserAgent ua) =
             (parseRequest_ . unpack $ url)
                 { Client.method = "POST"
                 , Client.requestHeaders =
@@ -194,12 +197,14 @@ clientCreatePullRequest app pr = do
     let ClientConfig {userAgent, maxResponseSizeBytes} = client
     let GitHubConfig {accountName, repoName, urlCreatePullRequest, customPort} = github
     GitHubToken {token} <- clientGitHubAuth app
-    let req = createReq userAgent urlCreatePullRequest accountName repoName customPort token
+    let url = createUrl urlCreatePullRequest customPort accountName repoName
+    let req = createReq url userAgent token
     sendReq manager req maxResponseSizeBytes
     where
-        createReq (ClientUserAgent ua) (GitHubUrlCreatePullRequest prurl) (GitHubAccountName an)
-                (GitHubRepoName rn) (GitHubCustomPort port) (GitHubTokenBody tok) =
-            let url = textFormat prurl $ fromList [port, an, rn] in
+        createUrl (GitHubUrlCreatePullRequest prurl) (GitHubCustomPort port)
+                (GitHubAccountName an) (GitHubRepoName rn) =
+            GitHubURL $ textFormat prurl $ fromList [port, an, rn]
+        createReq (GitHubURL url) (ClientUserAgent ua) (GitHubTokenBody tok) =
             (parseRequest_ . unpack $ url)
                     { Client.method = "POST"
                     , Client.requestHeaders =
@@ -235,12 +240,14 @@ clientCreateCheck app check = do
     let ClientConfig {userAgent, maxResponseSizeBytes} = client
     let GitHubConfig {accountName, repoName, urlCreateCheck, customPort} = github
     GitHubToken {token} <- clientGitHubAuth app
-    let req = createReq userAgent urlCreateCheck accountName repoName customPort token
+    let url = createUrl urlCreateCheck customPort accountName repoName
+    let req = createReq url userAgent token
     sendReq manager req maxResponseSizeBytes
     where
-        createReq (ClientUserAgent ua) (GitHubUrlCreateCheck curl) (GitHubAccountName an)
-                (GitHubRepoName rn) (GitHubCustomPort port) (GitHubTokenBody tok) =
-            let url = textFormat curl $ fromList [port, an, rn] in
+        createUrl (GitHubUrlCreateCheck curl) (GitHubCustomPort port)
+                (GitHubAccountName an) (GitHubRepoName rn) =
+            GitHubURL $ textFormat curl $ fromList [port, an, rn]
+        createReq (GitHubURL url) (ClientUserAgent ua) (GitHubTokenBody tok) =
             (parseRequest_ . unpack $ url)
                 { Client.method = "POST"
                 , Client.requestHeaders =
@@ -257,3 +264,47 @@ clientCreateCheck app check = do
                 when (201 /= st) $ do
                     tx <- httpResponseBodyText (textShow req) resp mb
                     throwIO $ ClientCreateCheckException req st tx
+
+data ClientAddCommentException = ClientAddCommentException
+    { request :: Client.Request
+    , status :: Int
+    , response :: Text
+    }
+instance Exception ClientAddCommentException
+instance Show ClientAddCommentException where
+    show e@(ClientAddCommentException {request, status, response}) = errorShow e $
+               "Error adding comment,"
+            <> " req: [" <> (textShow request) <> "],"
+            <> " status: [" <> (textShow status) <> "],"
+            <> " resp: [" <> (Text.take 1024 response) <> "]"
+clientAddComment :: AppState -> GitHubIssueNumber -> GitHubIssueComment -> IO ()
+clientAddComment app num' cmt' = do
+    let AppState {config, manager} = app
+    let Config {client, github} = config
+    let ClientConfig {userAgent, maxResponseSizeBytes} = client
+    let GitHubConfig {accountName, repoName, urlAddComment, customPort} = github
+    GitHubToken {token} <- clientGitHubAuth app
+    let url = createUrl urlAddComment customPort accountName repoName num'
+    let req = createReq url userAgent token cmt'
+    sendReq manager req maxResponseSizeBytes
+    where
+        createUrl (GitHubUrlAddComment aurl) (GitHubCustomPort port)
+                (GitHubAccountName an) (GitHubRepoName rn) (GitHubIssueNumber num) =
+            GitHubURL $ textFormat aurl $ fromList [port, an, rn, (textShow num)]
+        createReq (GitHubURL url) (ClientUserAgent ua) (GitHubTokenBody tok) (GitHubIssueComment cmt) =
+            (parseRequest_ . unpack $ url)
+                { Client.method = "POST"
+                , Client.requestHeaders =
+                    [ ("User-Agent", (encodeUtf8 ua))
+                    , ("Authorization", "token " <> (encodeUtf8 tok))
+                    ]
+                , Client.requestBody = (Client.RequestBodyLBS . encodePretty) $ object
+                    [ "body" .= cmt
+                    ]
+                }
+        sendReq man req (ClientMaxResponseSizeBytes mb) =
+            withResponse req man $ \resp -> do
+                let HTTPTypes.Status st _ = Client.responseStatus resp
+                when (201 /= st) $ do
+                    tx <- httpResponseBodyText (textShow req) resp mb
+                    throwIO $ ClientAddCommentException req st tx

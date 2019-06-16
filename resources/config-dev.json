@@ -1,6 +1,7 @@
 {
     "server": {
-        "tcpPort": 8088
+        "tcpPort": 8088,
+        "webHookActionsEnabled": true
     },
 
     "client": {
@@ -22,6 +23,7 @@
         "customPort": "",
         "urlAuth": "https://api.github.com{}/app/installations/{}/access_tokens",
         "urlCreatePullRequest":  "https://api.github.com{}/repos/{}/{}/pulls",
-        "urlCreateCheck": "https://api.github.com{}/repos/{}/{}/check-runs"
+        "urlCreateCheck": "https://api.github.com{}/repos/{}/{}/check-runs",
+        "urlAddComment": "https://api.github.com{}/repos/{}/{}/issues/{}/comments"
     }
 }
